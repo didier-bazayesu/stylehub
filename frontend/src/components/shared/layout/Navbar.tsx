@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, } from "react-router-dom";
 import {
   Menu,
   Search,
@@ -9,13 +9,15 @@ import {
   LogOut,
   LayoutDashboard,
   Store,
+  Bell,
 } from "lucide-react";
 import { useAuthStore, useCartStore, useUIStore } from "@/store";
 import { useLogout } from "@/api/hooks/useAuth";
 import { Button } from "@/components/ui/Button";
 import { ROUTES } from "@/config/constants";
-import { cn, getInitials } from "@/lib/utils";
+import { getInitials } from "@/lib/utils";
 import { useState, useRef, useEffect } from "react";
+
 
 export function Navbar() {
   const { user, isAuthenticated } = useAuthStore();
@@ -93,7 +95,7 @@ export function Navbar() {
         <div className="flex-1" />
 
         {/* Actions */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-4">
           {/* Search */}
           <button
             onClick={() => setSearchOpen(true)}
@@ -113,6 +115,14 @@ export function Navbar() {
               <Heart className="h-5 w-5" />
             </Link>
           )}
+          {isAuthenticated
+          &&
+
+          <Link to ={ROUTES.CUSTOMER.NOTIFICATIONS}>
+              <Bell/>
+           </Link>
+
+          }
 
           {/* Cart — ALL authenticated users can shop */}
           <button

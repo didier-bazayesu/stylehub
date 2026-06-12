@@ -554,16 +554,16 @@ export function useAdminOverview() {
 // PAYMENTS
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function useCreatePaymentIntent() {
-  return useMutation({
-    mutationFn: async (orderId: string) => {
-      const { data } = await apiClient.post<
-        ApiResponse<{ client_secret: string; payment_intent_id: string }>
-      >('/payments/create-intent', { order_id: orderId })
-      return data.data
-    },
-  })
-}
+// export function useCreatePaymentIntent() {
+//   return useMutation({
+//     mutationFn: async (orderId: string) => {
+//       const { data } = await apiClient.post<
+//         ApiResponse<{ client_secret: string; payment_intent_id: string }>
+//       >('/payments/create-intent', { order_id: orderId })
+//       return data.data
+//     },
+//   })
+// }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ADMIN
