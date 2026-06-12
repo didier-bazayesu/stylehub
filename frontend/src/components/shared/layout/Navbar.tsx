@@ -1,4 +1,4 @@
-import { Link, } from "react-router-dom";
+import { Link } from "react-router-dom";
 import {
   Menu,
   Search,
@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/Button";
 import { ROUTES } from "@/config/constants";
 import { getInitials } from "@/lib/utils";
 import { useState, useRef, useEffect } from "react";
-
+import { ThemeToggle } from "./ThemeToggle";
 
 export function Navbar() {
   const { user, isAuthenticated } = useAuthStore();
@@ -108,21 +108,18 @@ export function Navbar() {
           {/* Wishlist — ALL authenticated users can shop */}
           {isAuthenticated && (
             <Link
-              to={ROUTES.CUSTOMER.WISHLIST}
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-800 dark:hover:text-white"
-              aria-label="Wishlist"
+            to={ROUTES.CUSTOMER.WISHLIST}
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-800 dark:hover:text-white"
+            aria-label="Wishlist"
             >
               <Heart className="h-5 w-5" />
             </Link>
           )}
-          {isAuthenticated
-          &&
-
-          <Link to ={ROUTES.CUSTOMER.NOTIFICATIONS}>
-              <Bell/>
-           </Link>
-
-          }
+          {isAuthenticated && (
+            <Link to={ROUTES.CUSTOMER.NOTIFICATIONS}>
+              <Bell />
+            </Link>
+          )}
 
           {/* Cart — ALL authenticated users can shop */}
           <button
@@ -197,6 +194,7 @@ export function Navbar() {
                       Profile
                     </Link>
                   </div>
+                  <ThemeToggle />
 
                   {/* Become a vendor — customers only */}
                   {user?.role === "CUSTOMER" && (
