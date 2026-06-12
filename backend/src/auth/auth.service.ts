@@ -11,7 +11,13 @@ import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { Resend } from 'resend';
 import { PrismaService } from '../prisma/prisma.service';
-import { RegisterDto, LoginDto, ForgotPasswordDto, ResetPasswordDto, VerifyEmailDto } from './dto';
+import {
+  RegisterDto,
+  LoginDto,
+  ForgotPasswordDto,
+  ResetPasswordDto,
+  VerifyEmailDto,
+} from './dto';
 import { JwtPayload } from './strategies/jwt.strategy';
 
 @Injectable()
@@ -67,33 +73,47 @@ export class AuthService {
       email: user.email,
       first_name: user.first_name,
       last_name: user.last_name,
-      message: 'Registration successful. Please check your email to verify your account.',
+      message:
+        'Registration successful. Please check your email to verify your account.',
     };
   }
 
   // ── Login ───────────────────────────────────────────────────────
   async login(dto: LoginDto) {
+    this.logger.log(`Login attempt for email: ${dto.email.toLowerCase()}`);
+    
     const user = await this.prisma.user.findFirst({
       where: { email: dto.email.toLowerCase() },
       include: { vendor: { select: { id: true, status: true } } },
     });
 
     if (!user) {
+      this.logger.warn(`User not found: ${dto.email.toLowerCase()}`);
       throw new UnauthorizedException({
         code: 'INVALID_CREDENTIALS',
         message: 'Invalid email or password.',
       });
     }
 
+    this.logger.log(`User found: ${user.email}, is_active: ${user.is_active}, role: ${user.role}`);
+
     if (!user.is_active) {
+      this.logger.warn(`User account deactivated: ${user.email}`);
       throw new UnauthorizedException({
         code: 'ACCOUNT_DEACTIVATED',
         message: 'Your account has been deactivated. Contact support.',
       });
     }
 
-    const isPasswordValid = await bcrypt.compare(dto.password, user.password_hash);
+    const isPasswordValid = await bcrypt.compare(
+      dto.password,
+      user.password_hash,
+    );
+    
+    this.logger.log(`Password validation result: ${isPasswordValid}`);
+    
     if (!isPasswordValid) {
+      this.logger.warn(`Invalid password for user: ${user.email}`);
       throw new UnauthorizedException({
         code: 'INVALID_CREDENTIALS',
         message: 'Invalid email or password.',
@@ -228,7 +248,10 @@ export class AuthService {
 
     // Always return success to prevent email enumeration
     if (!user) {
-      return { message: 'If an account with that email exists, a reset link has been sent.' };
+      return {
+        message:
+          'If an account with that email exists, a reset link has been sent.',
+      };
     }
 
     const resetToken = crypto.randomBytes(32).toString('hex');
@@ -244,7 +267,10 @@ export class AuthService {
 
     await this.sendPasswordResetEmail(user.email, resetToken);
 
-    return { message: 'If an account with that email exists, a reset link has been sent.' };
+    return {
+      message:
+        'If an account with that email exists, a reset link has been sent.',
+    };
   }
 
   // ── Reset Password ─────────────────────────────────────────────
@@ -276,7 +302,10 @@ export class AuthService {
       },
     });
 
-    return { message: 'Password reset successfully. Please log in with your new password.' };
+    return {
+      message:
+        'Password reset successfully. Please log in with your new password.',
+    };
   }
 
   // ── Get Current User ───────────────────────────────────────────
@@ -327,12 +356,18 @@ export class AuthService {
   }
 
   private async sendVerificationEmail(email: string, token: string) {
-    const frontendUrl = this.configService.get('FRONTEND_URL', 'http://localhost:5173');
+    const frontendUrl = this.configService.get(
+      'FRONTEND_URL',
+      'http://localhost:5173',
+    );
     const verifyUrl = `${frontendUrl}/verify-email?token=${token}`;
 
     try {
       await this.resend.emails.send({
-        from: this.configService.get('RESEND_FROM_EMAIL', 'onboarding@resend.dev'),
+        from: this.configService.get(
+          'RESEND_FROM_EMAIL',
+          'onboarding@resend.dev',
+        ),
         to: email,
         subject: 'Verify your StyleHub account',
         html: `
@@ -349,18 +384,27 @@ export class AuthService {
         `,
       });
     } catch (error) {
-      this.logger.error(`Failed to send verification email to ${email}:`, error);
+      this.logger.error(
+        `Failed to send verification email to ${email}:`,
+        error,
+      );
       // Don't throw — registration still succeeds even if email fails
     }
   }
 
   private async sendPasswordResetEmail(email: string, token: string) {
-    const frontendUrl = this.configService.get('FRONTEND_URL', 'http://localhost:5173');
+    const frontendUrl = this.configService.get(
+      'FRONTEND_URL',
+      'http://localhost:5173',
+    );
     const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
 
     try {
       await this.resend.emails.send({
-        from: this.configService.get('RESEND_FROM_EMAIL', 'onboarding@resend.dev'),
+        from: this.configService.get(
+          'RESEND_FROM_EMAIL',
+          'onboarding@resend.dev',
+        ),
         to: email,
         subject: 'Reset your StyleHub password',
         html: `
@@ -377,7 +421,10 @@ export class AuthService {
         `,
       });
     } catch (error) {
-      this.logger.error(`Failed to send password reset email to ${email}:`, error);
+      this.logger.error(
+        `Failed to send password reset email to ${email}:`,
+        error,
+      );
     }
   }
 }

@@ -4,7 +4,12 @@ import {
   UnprocessableEntityException,
   BadRequestException,
 } from '@nestjs/common';
-import { NotificationType, OrderStatus, ProductStatus, Prisma } from '@prisma/client';
+import {
+  NotificationType,
+  OrderStatus,
+  ProductStatus,
+  Prisma,
+} from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CartService } from '../cart/cart.service';
 import { VendorsService } from '../vendors/vendors.service';

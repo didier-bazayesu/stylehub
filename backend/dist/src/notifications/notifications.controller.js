@@ -22,8 +22,10 @@ let NotificationsController = class NotificationsController {
     constructor(notificationsService) {
         this.notificationsService = notificationsService;
     }
-    findAll(userId) {
-        return this.notificationsService.findAllForUser(userId);
+    async findAll(userId) {
+        const notifications = await this.notificationsService.findAllForUser(userId);
+        const unread_count = notifications.filter((n) => !n.is_read).length;
+        return { data: notifications, meta: { unread_count } };
     }
     markAllAsRead(userId) {
         return this.notificationsService.markAllAsRead(userId);
@@ -42,7 +44,7 @@ __decorate([
     __param(0, (0, decorators_1.CurrentUser)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], NotificationsController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Patch)('read-all'),

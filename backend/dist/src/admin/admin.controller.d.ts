@@ -97,11 +97,11 @@ export declare class AdminController {
             };
             vendor: {
                 id: string;
-                business_name: string;
                 store: {
                     name: string;
                     slug: string;
                 } | null;
+                business_name: string;
             };
             created_at: Date;
         }[];

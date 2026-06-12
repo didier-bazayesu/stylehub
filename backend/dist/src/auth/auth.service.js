@@ -95,24 +95,30 @@ let AuthService = AuthService_1 = class AuthService {
         };
     }
     async login(dto) {
+        this.logger.log(`Login attempt for email: ${dto.email.toLowerCase()}`);
         const user = await this.prisma.user.findFirst({
             where: { email: dto.email.toLowerCase() },
             include: { vendor: { select: { id: true, status: true } } },
         });
         if (!user) {
+            this.logger.warn(`User not found: ${dto.email.toLowerCase()}`);
             throw new common_1.UnauthorizedException({
                 code: 'INVALID_CREDENTIALS',
                 message: 'Invalid email or password.',
             });
         }
+        this.logger.log(`User found: ${user.email}, is_active: ${user.is_active}, role: ${user.role}`);
         if (!user.is_active) {
+            this.logger.warn(`User account deactivated: ${user.email}`);
             throw new common_1.UnauthorizedException({
                 code: 'ACCOUNT_DEACTIVATED',
                 message: 'Your account has been deactivated. Contact support.',
             });
         }
         const isPasswordValid = await bcrypt.compare(dto.password, user.password_hash);
+        this.logger.log(`Password validation result: ${isPasswordValid}`);
         if (!isPasswordValid) {
+            this.logger.warn(`Invalid password for user: ${user.email}`);
             throw new common_1.UnauthorizedException({
                 code: 'INVALID_CREDENTIALS',
                 message: 'Invalid email or password.',
@@ -223,7 +229,9 @@ let AuthService = AuthService_1 = class AuthService {
             where: { email: dto.email.toLowerCase() },
         });
         if (!user) {
-            return { message: 'If an account with that email exists, a reset link has been sent.' };
+            return {
+                message: 'If an account with that email exists, a reset link has been sent.',
+            };
         }
         const resetToken = crypto.randomBytes(32).toString('hex');
         const resetExpires = new Date(Date.now() + 60 * 60 * 1000);
@@ -235,7 +243,9 @@ let AuthService = AuthService_1 = class AuthService {
             },
         });
         await this.sendPasswordResetEmail(user.email, resetToken);
-        return { message: 'If an account with that email exists, a reset link has been sent.' };
+        return {
+            message: 'If an account with that email exists, a reset link has been sent.',
+        };
     }
     async resetPassword(dto) {
         const user = await this.prisma.user.findFirst({
@@ -261,7 +271,9 @@ let AuthService = AuthService_1 = class AuthService {
                 refresh_token: null,
             },
         });
-        return { message: 'Password reset successfully. Please log in with your new password.' };
+        return {
+            message: 'Password reset successfully. Please log in with your new password.',
+        };
     }
     async getMe(userId) {
         const user = await this.prisma.user.findFirst({

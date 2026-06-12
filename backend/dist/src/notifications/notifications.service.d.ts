@@ -4,17 +4,14 @@ export declare class NotificationsService {
     private prisma;
     constructor(prisma: PrismaService);
     findAllForUser(userId: string): Promise<{
-        items: {
-            id: string;
-            type: import("@prisma/client").$Enums.NotificationType;
-            title: string;
-            message: string;
-            is_read: boolean;
-            data: Prisma.JsonValue;
-            created_at: Date;
-        }[];
-        unread_count: number;
-    }>;
+        id: string;
+        type: import("@prisma/client").$Enums.NotificationType;
+        title: string;
+        message: string;
+        is_read: boolean;
+        data: Prisma.JsonValue;
+        created_at: Date;
+    }[]>;
     markAsRead(userId: string, notificationId: string): Promise<{
         id: string;
         type: import("@prisma/client").$Enums.NotificationType;

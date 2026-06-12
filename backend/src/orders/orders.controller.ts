@@ -45,11 +45,7 @@ export class OrdersController {
     @Param('orderItemId') orderItemId: string,
     @Body() dto: UpdateOrderItemStatusDto,
   ) {
-    return this.ordersService.updateOrderItemStatus(
-      userId,
-      orderItemId,
-      dto,
-    );
+    return this.ordersService.updateOrderItemStatus(userId, orderItemId, dto);
   }
 
   @Get()

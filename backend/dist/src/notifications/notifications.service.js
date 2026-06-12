@@ -22,11 +22,7 @@ let NotificationsService = class NotificationsService {
             where: { user_id: userId },
             orderBy: { created_at: 'desc' },
         });
-        const unreadCount = notifications.filter((n) => !n.is_read).length;
-        return {
-            items: notifications.map((notification) => this.mapNotification(notification)),
-            unread_count: unreadCount,
-        };
+        return notifications.map((notification) => this.mapNotification(notification));
     }
     async markAsRead(userId, notificationId) {
         const notification = await this.findOwnedNotification(userId, notificationId);

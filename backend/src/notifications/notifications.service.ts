@@ -12,16 +12,16 @@ export class NotificationsService {
       orderBy: { created_at: 'desc' },
     });
 
-    const unreadCount = notifications.filter((n) => !n.is_read).length;
-
-    return {
-      items: notifications.map((notification) => this.mapNotification(notification)),
-      unread_count: unreadCount,
-    };
+    return notifications.map((notification) =>
+      this.mapNotification(notification),
+    );
   }
 
   async markAsRead(userId: string, notificationId: string) {
-    const notification = await this.findOwnedNotification(userId, notificationId);
+    const notification = await this.findOwnedNotification(
+      userId,
+      notificationId,
+    );
 
     const updated = await this.prisma.notification.update({
       where: { id: notification.id },
@@ -41,7 +41,10 @@ export class NotificationsService {
   }
 
   async remove(userId: string, notificationId: string) {
-    const notification = await this.findOwnedNotification(userId, notificationId);
+    const notification = await this.findOwnedNotification(
+      userId,
+      notificationId,
+    );
 
     await this.prisma.notification.delete({
       where: { id: notification.id },

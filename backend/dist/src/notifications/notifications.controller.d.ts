@@ -3,7 +3,7 @@ export declare class NotificationsController {
     private readonly notificationsService;
     constructor(notificationsService: NotificationsService);
     findAll(userId: string): Promise<{
-        items: {
+        data: {
             id: string;
             type: import("@prisma/client").$Enums.NotificationType;
             title: string;
@@ -12,7 +12,9 @@ export declare class NotificationsController {
             data: import("@prisma/client/runtime/client").JsonValue;
             created_at: Date;
         }[];
-        unread_count: number;
+        meta: {
+            unread_count: number;
+        };
     }>;
     markAllAsRead(userId: string): Promise<{
         message: string;

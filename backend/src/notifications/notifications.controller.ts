@@ -11,8 +11,11 @@ export class NotificationsController {
 
   @Get()
   @ApiOperation({ summary: 'List notifications for current user' })
-  findAll(@CurrentUser('id') userId: string) {
-    return this.notificationsService.findAllForUser(userId);
+  async findAll(@CurrentUser('id') userId: string) {
+    const notifications =
+      await this.notificationsService.findAllForUser(userId);
+    const unread_count = notifications.filter((n) => !n.is_read).length;
+    return { data: notifications, meta: { unread_count } };
   }
 
   @Patch('read-all')
