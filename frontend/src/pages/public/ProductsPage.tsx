@@ -2,13 +2,11 @@ import { useCallback, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { SlidersHorizontal, X } from 'lucide-react'
 import { useInfiniteProducts } from '@/api/hooks/useProducts'
-import { useCategories } from '@/api/hooks'
 import { ProductCard } from '@/components/shared/cards/ProductCard'
 import { ProductCardSkeleton } from '@/components/ui/Loading'
 import { NoResults, ErrorState } from '@/components/ui/EmptyState'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
-import { cn } from '@/lib/utils'
 import type { ProductFilters } from '@/types'
 
 const SORT_OPTIONS = [

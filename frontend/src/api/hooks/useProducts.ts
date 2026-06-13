@@ -78,7 +78,8 @@ export function useFeaturedProducts() {
     queryKey: QUERY_KEYS.featuredProducts,
     queryFn: async () => {
       const { data } = await apiClient.get<ApiResponse<Product[]>>('/products/featured')
-      return data.data
+      const result = data.data
+      return Array.isArray(result) ? result : []   // ← changed line
     },
     staleTime: STALE_TIME.MEDIUM,
   })
@@ -163,7 +164,7 @@ export function useUploadProductImages(productId: string) {
   return useMutation({
     mutationFn: async (files: File[]) => {
       const formData = new FormData()
-      files.forEach((file) => formData.append('images', file))
+      files.forEach((file) => formData.append('files', file))
       const { data } = await apiClient.post<ApiResponse<Product>>(
         `/products/${productId}/images`,
         formData,

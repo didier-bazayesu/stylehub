@@ -2,13 +2,13 @@ import { Link } from 'react-router-dom'
 import { Heart, Star } from 'lucide-react'
 import { cn, formatCurrency, getProductPrimaryImage, truncate } from '@/lib/utils'
 import { ROUTES } from '@/config/constants'
-import type { Product } from '@/types'
+import type {  Product, ProductListItem } from '@/types'
 
 interface ProductCardProps {
-  product: Product
-  isWishlisted?: boolean
-  onWishlistToggle?: (productId: string) => void
-  className?: string
+  product: ProductListItem | Product;
+  isWishlisted?: boolean;
+  onWishlistToggle?: (productId: string) => void;
+  className?: string;
 }
 
 export function ProductCard({
@@ -17,15 +17,20 @@ export function ProductCard({
   onWishlistToggle,
   className,
 }: ProductCardProps) {
-  const primaryImage = getProductPrimaryImage(product.images ?? [])
+
+    const imageUrl =
+      "image" in product
+        ? (product.image ?? "/placeholder-product.png")
+        : getProductPrimaryImage((product as Product).images ?? []);
+
   const price = product.variants?.[0]?.price ?? product.base_price
 
   return (
     <article
       className={cn(
-        'group relative flex flex-col bg-white dark:bg-gray-900',
-        'rounded-xl border border-gray-100 dark:border-gray-800',
-        'overflow-hidden transition-shadow hover:shadow-md',
+        "group relative flex flex-col bg-white dark:bg-gray-900",
+        "rounded-xl border border-gray-100 dark:border-gray-800",
+        "overflow-hidden transition-shadow hover:shadow-md",
         className,
       )}
     >
@@ -36,7 +41,7 @@ export function ProductCard({
         tabIndex={-1}
       >
         <img
-          src={primaryImage}
+          src={imageUrl}
           alt={product.name}
           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           loading="lazy"
@@ -52,18 +57,18 @@ export function ProductCard({
       {onWishlistToggle && (
         <button
           onClick={(e) => {
-            e.preventDefault()
-            onWishlistToggle(product.id)
+            e.preventDefault();
+            onWishlistToggle(product.id);
           }}
           className={cn(
-            'absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full',
-            'bg-white/90 backdrop-blur-sm transition-colors dark:bg-gray-900/90',
-            'hover:bg-white dark:hover:bg-gray-800',
-            isWishlisted ? 'text-red-500' : 'text-gray-400 hover:text-gray-600',
+            "absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full",
+            "bg-white/90 backdrop-blur-sm transition-colors dark:bg-gray-900/90",
+            "hover:bg-white dark:hover:bg-gray-800",
+            isWishlisted ? "text-red-500" : "text-gray-400 hover:text-gray-600",
           )}
-          aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
+          aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
         >
-          <Heart className={cn('h-4 w-4', isWishlisted && 'fill-current')} />
+          <Heart className={cn("h-4 w-4", isWishlisted && "fill-current")} />
         </button>
       )}
 
@@ -99,5 +104,5 @@ export function ProductCard({
         </div>
       </div>
     </article>
-  )
+  );
 }

@@ -17,7 +17,7 @@ import {
   getProductPrimaryImage,
 } from '@/lib/utils'
 import { ROUTES } from '@/config/constants'
-import { useAuthStore } from '@/store'
+import { useAuthStore, useCartStore } from '@/store'
 
 export default function ProductDetailPage() {
   const { slug } = useParams<{ slug: string }>()
@@ -28,11 +28,12 @@ export default function ProductDetailPage() {
   const { mutate: addToWishlist } = useAddToWishlist()
   const { mutate: removeFromWishlist } = useRemoveFromWishlist()
   const { isAuthenticated } = useAuthStore()
-
+  
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null)
   const [quantity, setQuantity] = useState(1)
   const [activeImageIndex, setActiveImageIndex] = useState(0)
-
+  const { optimisticAddItem, openCart } = useCartStore();
+  
   if (isLoading) return <PageLoader />
   if (isError || !product) return <ErrorState onRetry={() => refetch()} />
 
@@ -41,6 +42,7 @@ export default function ProductDetailPage() {
   const selectedVariant = variants.find((v) => v.id === selectedVariantId) ?? variants[0]
   const isWishlisted = wishlist?.items.some((i) => i.product_id === product.id) ?? false
   const price = selectedVariant?.price ?? product.base_price
+  
 
   const handleWishlistToggle = () => {
     if (!isAuthenticated) return
@@ -51,10 +53,26 @@ export default function ProductDetailPage() {
     }
   }
 
-  const handleAddToCart = () => {
-    if (!selectedVariant) return
-    addToCart({ variant_id: selectedVariant.id, quantity })
-  }
+ const handleAddToCart = () => {
+   if (!selectedVariant) return;
+
+   if (!isAuthenticated) {
+     optimisticAddItem({
+       id: crypto.randomUUID(),
+       cart_id: "guest",
+       product_id: product.id,
+       variant_id: selectedVariant.id,
+       quantity,
+       added_at: new Date().toISOString(),
+       product,
+       variant: selectedVariant,
+     });
+     openCart();
+     return;
+   }
+
+   addToCart({ variant_id: selectedVariant.id, quantity });
+ };
 
   const sizes = [...new Set(variants.map((v) => v.size).filter(Boolean))]
   const colors = [...new Set(variants.map((v) => v.color).filter(Boolean))]

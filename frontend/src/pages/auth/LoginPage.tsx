@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Link } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
 import { useState } from 'react'
 import { useLogin } from '@/api/hooks/useAuth'
@@ -9,6 +9,9 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { ROUTES } from '@/config/constants'
 import { AuthBrandPanel } from '@/components/shared/layout/AuthBrandPanel'
+import { useAuthStore, useCartStore } from '@/store'
+import { useAddToCart } from '@/api/hooks'
+import { toast } from 'sonner'
 
 const schema = z.object({
   email: z.string().email('Enter a valid email address'),
@@ -17,20 +20,45 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>
 
+import { useEffect } from "react";
+
 export default function LoginPage() {
-  const { mutate: login, isPending } = useLogin()
-  const [showPassword, setShowPassword] = useState(false)
+  const { mutate: login, isPending } = useLogin();
+  const [showPassword, setShowPassword] = useState(false);
+  const { isAuthenticated } = useAuthStore();
+  const { cart, clearCart } = useCartStore();
+  const { mutate: addToCart } = useAddToCart();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<FormValues>({ resolver: zodResolver(schema) })
+  } = useForm<FormValues>({ resolver: zodResolver(schema) });
 
+  const from = location.state?.from ?? ROUTES.HOME;
+  const guestItems = cart?.id === "guest" ? [...(cart.items ?? [])] : [];
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      if (guestItems.length > 0) {
+        guestItems.forEach((item) => {
+          addToCart({ variant_id: item.variant.id, quantity: item.quantity });
+        });
+        clearCart();
+      }
+      navigate(from, { replace: true });
+    }
+  }, [isAuthenticated]);
+
+  const handleLogin = (values: FormValues) => {
+    login(values);
+  };
   return (
-    <div className='md:flex  md:min-h-screen'>
+    <div className="md:flex  md:min-h-screen">
       <AuthBrandPanel />
-      <div  className=" md:w-1/2 flex max-md:min-h-screen items-center justify-center bg-gray-50 px-4 dark:bg-gray-950">
+      <div className=" md:w-1/2 flex max-md:min-h-screen items-center justify-center bg-gray-50 px-4 dark:bg-gray-950">
         <div className="w-full max-w-sm">
           {/* Logo */}
           <Link
@@ -47,7 +75,7 @@ export default function LoginPage() {
             <p className="mb-6 text-sm text-gray-500">Log in to your account</p>
 
             <form
-              onSubmit={handleSubmit((values) => login(values))}
+              onSubmit={handleSubmit((values) => handleLogin(values))}
               className="flex flex-col gap-4"
               noValidate
             >

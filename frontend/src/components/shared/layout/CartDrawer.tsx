@@ -11,18 +11,30 @@ import { formatCurrency } from "@/lib/utils";
 import { ROUTES } from "@/config/constants";
 
 export function CartDrawer() {
-  const { isOpen, closeCart } = useCartStore();
+  const { isOpen, closeCart, cart: guestCart } = useCartStore();
   const { isAuthenticated } = useAuthStore();
-  const { data: cart, isLoading } = useCart();
+  const { data: backendCart, isLoading } = useCart();
   const { mutate: updateItem } = useUpdateCartItem();
   const { mutate: removeItem } = useRemoveFromCart();
+  const navigate = useNavigate();
 
+  // Use guest cart if not authenticated, backend cart if authenticated
+  const cart = isAuthenticated ? backendCart : guestCart;
   const items = cart?.items ?? [];
   const subtotal = items.reduce((s, i) => s + i.variant.price * i.quantity, 0);
   const shipping = subtotal > 100 ? 0 : 9.99;
   const total = subtotal + shipping;
 
   if (!isOpen) return null;
+
+  const handleCheckout = () => {
+    closeCart();
+    if (!isAuthenticated) {
+      navigate(ROUTES.LOGIN, { state: { from: ROUTES.CHECKOUT } });
+      return;
+    }
+    navigate(ROUTES.CHECKOUT);
+  };
 
   return (
     <>
@@ -54,25 +66,7 @@ export function CartDrawer() {
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-4 py-4">
-          {!isAuthenticated ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <ShoppingBag className="mb-3 h-10 w-10 text-gray-300" />
-              <p className="text-sm font-medium text-gray-900 dark:text-white">
-                Log in to see your cart
-              </p>
-              <p className="mt-1 text-xs text-gray-500">
-                Your saved items will appear here.
-              </p>
-              <div className="mt-4 flex gap-2">
-                <Button variant="outline" size="sm" asChild onClick={closeCart}>
-                  <Link to={ROUTES.LOGIN}>Log in</Link>
-                </Button>
-                <Button size="sm" asChild onClick={closeCart}>
-                  <Link to={ROUTES.PRODUCTS}>Shop</Link>
-                </Button>
-              </div>
-            </div>
-          ) : isLoading ? (
+          {isLoading && isAuthenticated ? (
             <div className="flex items-center justify-center py-16">
               <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-gray-900" />
             </div>
@@ -170,7 +164,9 @@ export function CartDrawer() {
                         </div>
 
                         <button
-                          onClick={() => removeItem(item.variant_id)}
+                          onClick={() => {
+                            removeItem(item.variant.id);
+                          }}
                           className="ml-auto flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950"
                         >
                           <Trash2 className="h-3 w-3" />
@@ -184,8 +180,8 @@ export function CartDrawer() {
           )}
         </div>
 
-        {/* Footer — only when there are items */}
-        {isAuthenticated && items.length > 0 && (
+        {/* Footer — show for all users with items */}
+        {items.length > 0 && (
           <div className="border-t border-gray-100 px-4 py-4 dark:border-gray-800">
             <div className="mb-3 flex flex-col gap-1.5 text-sm">
               <div className="flex justify-between text-gray-500 dark:text-gray-400">
@@ -204,8 +200,14 @@ export function CartDrawer() {
               </div>
             </div>
 
-            <Button fullWidth asChild onClick={closeCart}>
-              <Link to={ROUTES.CHECKOUT}>Proceed to checkout</Link>
+            {!isAuthenticated && (
+              <p className="mb-2 text-center text-xs text-gray-400">
+                You'll be asked to log in at checkout
+              </p>
+            )}
+
+            <Button fullWidth onClick={handleCheckout}>
+              Proceed to checkout
             </Button>
 
             <button

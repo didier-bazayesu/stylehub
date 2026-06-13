@@ -72,7 +72,11 @@ export default function CartPage() {
                 <Link to={ROUTES.PRODUCT(item.product.slug)}>
                   <div className="h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-gray-100">
                     {primaryImage && (
-                      <img src={primaryImage} alt={item.product.name} className="h-full w-full object-cover" />
+                      <img
+                        src={primaryImage}
+                        alt={item.product.name}
+                        className="h-full w-full object-cover"
+                      />
                     )}
                   </div>
                 </Link>
@@ -87,7 +91,9 @@ export default function CartPage() {
                   </Link>
                   {(item.variant.size || item.variant.color) && (
                     <p className="text-xs text-gray-400">
-                      {[item.variant.size, item.variant.color].filter(Boolean).join(' · ')}
+                      {[item.variant.size, item.variant.color]
+                        .filter(Boolean)
+                        .join(" · ")}
                     </p>
                   )}
                   <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
@@ -99,17 +105,25 @@ export default function CartPage() {
                     <div className="flex items-center gap-1 rounded-lg border border-gray-200 dark:border-gray-700">
                       <button
                         onClick={() =>
-                          updateItem({ variantId: item.variant_id, quantity: item.quantity - 1 })
+                          updateItem({
+                            variantId: item.variant_id,
+                            quantity: item.quantity - 1,
+                          })
                         }
                         disabled={item.quantity <= 1}
                         className="flex h-8 w-8 items-center justify-center text-gray-500 hover:text-gray-900 disabled:opacity-40 dark:hover:text-white"
                       >
                         <Minus className="h-3 w-3" />
                       </button>
-                      <span className="w-6 text-center text-sm">{item.quantity}</span>
+                      <span className="w-6 text-center text-sm">
+                        {item.quantity}
+                      </span>
                       <button
                         onClick={() =>
-                          updateItem({ variantId: item.variant_id, quantity: item.quantity + 1 })
+                          updateItem({
+                            variantId: item.variant_id,
+                            quantity: item.quantity + 1,
+                          })
                         }
                         className="flex h-8 w-8 items-center justify-center text-gray-500 hover:text-gray-900 dark:hover:text-white"
                       >
@@ -118,7 +132,10 @@ export default function CartPage() {
                     </div>
 
                     <button
-                      onClick={() => removeItem(item.variant_id)}
+                      onClick={() => {
+                        console.log("item:", item);
+                        removeItem(item.variant.id);
+                      }}
                       className="ml-auto flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950"
                       aria-label="Remove item"
                     >
@@ -127,7 +144,7 @@ export default function CartPage() {
                   </div>
                 </div>
               </div>
-            )
+            );
           })}
         </div>
 

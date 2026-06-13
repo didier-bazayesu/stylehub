@@ -31,10 +31,8 @@ export function useMe() {
 }
 
 // ─── Login ────────────────────────────────────────────────────────────────────
-
 export function useLogin() {
   const { setAuth } = useAuthStore()
-  const navigate = useNavigate()
 
   return useMutation({
     mutationFn: async (payload: LoginPayload) => {
@@ -48,19 +46,9 @@ export function useLogin() {
       setAuth(user, access_token)
       queryClient.setQueryData(QUERY_KEYS.me, user)
       toast.success(`Welcome back, ${user.first_name}!`)
-
-      // Role-based redirect
-      if (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') {
-        navigate(ROUTES.ADMIN.DASHBOARD)
-      } else if (user.role === 'VENDOR') {
-        navigate(ROUTES.VENDOR.DASHBOARD)
-      } else {
-        navigate(ROUTES.HOME)
-      }
     },
   })
 }
-
 // ─── Register ─────────────────────────────────────────────────────────────────
 
 export function useRegister() {

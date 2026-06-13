@@ -3,13 +3,13 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Plus, Trash2, Upload, ArrowLeft } from 'lucide-react'
+import { Plus, Upload, ArrowLeft } from 'lucide-react'
+import { useUpdateProductStatus } from "@/api/hooks/useProducts";
 import {
   useCreateProduct,
   useUpdateProduct,
   useProduct,
   useAddVariant,
-  useDeleteProduct,
   useUploadProductImages,
 } from '@/api/hooks/useProducts'
 import { useCategories } from '@/api/hooks'
@@ -53,11 +53,15 @@ export default function ProductFormPage() {
 
   const [step, setStep] = useState<Step>('Details')
   const [productId, setProductId] = useState<string | null>(id ?? null)
+  const [hasVariants, setHasVariants] = useState(false);
 
   // Fetch existing product for editing
-  const { data: existingProduct, isLoading: loadingProduct } = useProduct(
-    productId ? `${productId}` : '',
-  )
+  // const { data: existingProduct, isLoading: loadingProduct } = useProduct(
+  //   productId ? `${productId}` : '',
+  // )
+ const { data: existingProduct, isLoading: loadingProduct } = useProduct(
+   isEditing ? id! : "",
+ );
 
   const { data: categories } = useCategories()
   const { mutate: createProduct, isPending: creating } = useCreateProduct()
@@ -65,10 +69,12 @@ export default function ProductFormPage() {
   const { mutate: addVariant, isPending: addingVariant } = useAddVariant(productId ?? '')
   const { mutate: uploadImages, isPending: uploadingImages } = useUploadProductImages(productId ?? '')
 
-  const { files, previews, onInputChange, onDrop, clear: clearFiles, openPicker } = useFileUpload({
+  const { files, previews, onInputChange, onDrop, clear: clearFiles, openPicker,inputRef } = useFileUpload({
     multiple: true,
     maxSizeBytes: 5 * 1024 * 1024,
   })
+  const { mutate: updateStatus, isPending: publishing } =
+    useUpdateProductStatus();
 
   const detailsForm = useForm<DetailsValues>({ resolver: zodResolver(detailsSchema) })
   const variantForm = useForm<VariantValues>({ resolver: zodResolver(variantSchema) })
@@ -101,23 +107,43 @@ export default function ProductFormPage() {
     }
   }
 
+  // const handleAddVariant = (values: VariantValues) => {
+  //   if (!productId) return
+  //   addVariant(values, { onSuccess: () => variantForm.reset() })
+  // }
   const handleAddVariant = (values: VariantValues) => {
-    if (!productId) return
-    addVariant(values, { onSuccess: () => variantForm.reset() })
-  }
+    if (!productId) return;
+
+    addVariant(values, {
+      onSuccess: () => {
+        setHasVariants(true);
+        variantForm.reset();
+      },
+    });
+  };
 
   const handleUploadImages = () => {
     if (!productId || !files.length) return
     uploadImages(files, { onSuccess: () => { clearFiles(); setStep('Publish') } })
   }
 
-  const handlePublish = () => {
-    if (!productId) return
-    updateProduct({ status: ProductStatus.ACTIVE }, {
-      onSuccess: () => navigate(ROUTES.VENDOR.PRODUCTS),
-    })
-  }
+const handlePublish = () => {
+  if (!productId) return;
 
+  updateStatus(
+    {
+      id: productId,
+      status: ProductStatus.ACTIVE,
+    },
+    {
+      onSuccess: () => {
+        navigate(ROUTES.VENDOR.PRODUCTS);
+      },
+    },
+  );
+};
+
+  
   return (
     <div className="mx-auto max-w-2xl p-6">
       {/* Header */}
@@ -129,7 +155,7 @@ export default function ProductFormPage() {
           <ArrowLeft className="h-4 w-4" />
         </button>
         <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
-          {isEditing ? 'Edit product' : 'Add product'}
+          {isEditing ? "Edit product" : "Add product"}
         </h1>
       </div>
 
@@ -140,19 +166,19 @@ export default function ProductFormPage() {
             <div
               className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold ${
                 i < currentStepIndex
-                  ? 'bg-emerald-500 text-white'
+                  ? "bg-emerald-500 text-white"
                   : i === currentStepIndex
-                  ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
-                  : 'bg-gray-100 text-gray-400 dark:bg-gray-800'
+                    ? "bg-gray-900 text-white dark:bg-white dark:text-gray-900"
+                    : "bg-gray-100 text-gray-400 dark:bg-gray-800"
               }`}
             >
-              {i < currentStepIndex ? '✓' : i + 1}
+              {i < currentStepIndex ? "✓" : i + 1}
             </div>
             <span
               className={`text-xs ${
                 i === currentStepIndex
-                  ? 'font-medium text-gray-900 dark:text-white'
-                  : 'text-gray-400'
+                  ? "font-medium text-gray-900 dark:text-white"
+                  : "text-gray-400"
               }`}
             >
               {s}
@@ -165,7 +191,7 @@ export default function ProductFormPage() {
       </div>
 
       {/* ── Step: Details ── */}
-      {step === 'Details' && (
+      {step === "Details" && (
         <form
           onSubmit={detailsForm.handleSubmit(handleDetailsSubmit)}
           className="flex flex-col gap-5 rounded-xl border border-gray-100 bg-white p-6 dark:border-gray-800 dark:bg-gray-900"
@@ -174,7 +200,7 @@ export default function ProductFormPage() {
             label="Product name"
             required
             error={detailsForm.formState.errors.name?.message}
-            {...detailsForm.register('name')}
+            {...detailsForm.register("name")}
           />
 
           <div className="flex flex-col gap-1.5">
@@ -182,16 +208,20 @@ export default function ProductFormPage() {
               Category <span className="text-red-500">*</span>
             </label>
             <select
-              {...detailsForm.register('category_id')}
+              {...detailsForm.register("category_id")}
               className="h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
             >
               <option value="">Select a category…</option>
               {categories?.map((cat) => (
-                <option key={cat.id} value={cat.id}>{cat.name}</option>
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
               ))}
             </select>
             {detailsForm.formState.errors.category_id && (
-              <p className="text-xs text-red-500">{detailsForm.formState.errors.category_id.message}</p>
+              <p className="text-xs text-red-500">
+                {detailsForm.formState.errors.category_id.message}
+              </p>
             )}
           </div>
 
@@ -200,13 +230,15 @@ export default function ProductFormPage() {
               Description <span className="text-red-500">*</span>
             </label>
             <textarea
-              {...detailsForm.register('description')}
+              {...detailsForm.register("description")}
               rows={4}
               className="rounded-lg border border-gray-300 bg-white p-3 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
               placeholder="Describe your product in detail…"
             />
             {detailsForm.formState.errors.description && (
-              <p className="text-xs text-red-500">{detailsForm.formState.errors.description.message}</p>
+              <p className="text-xs text-red-500">
+                {detailsForm.formState.errors.description.message}
+              </p>
             )}
           </div>
 
@@ -217,7 +249,7 @@ export default function ProductFormPage() {
             min="0"
             required
             error={detailsForm.formState.errors.base_price?.message}
-            {...detailsForm.register('base_price')}
+            {...detailsForm.register("base_price")}
           />
 
           <Button type="submit" isLoading={creating || updating} fullWidth>
@@ -227,7 +259,7 @@ export default function ProductFormPage() {
       )}
 
       {/* ── Step: Variants ── */}
-      {step === 'Variants' && (
+      {step === "Variants" && (
         <div className="flex flex-col gap-4">
           {/* Existing variants */}
           {existingProduct?.variants && existingProduct.variants.length > 0 && (
@@ -243,8 +275,12 @@ export default function ProductFormPage() {
                   >
                     <div className="flex items-center gap-2">
                       <Badge variant="outline">{v.sku}</Badge>
-                      {v.size && <span className="text-gray-500">Size: {v.size}</span>}
-                      {v.color && <span className="text-gray-500">Color: {v.color}</span>}
+                      {v.size && (
+                        <span className="text-gray-500">Size: {v.size}</span>
+                      )}
+                      {v.color && (
+                        <span className="text-gray-500">Color: {v.color}</span>
+                      )}
                     </div>
                     <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
                       <span>${v.price}</span>
@@ -270,17 +306,25 @@ export default function ProductFormPage() {
                 required
                 placeholder="e.g. SHIRT-BLK-M"
                 error={variantForm.formState.errors.sku?.message}
-                {...variantForm.register('sku')}
+                {...variantForm.register("sku")}
               />
-              <Input label="Size" placeholder="S / M / L / XL" {...variantForm.register('size')} />
-              <Input label="Color" placeholder="Black" {...variantForm.register('color')} />
+              <Input
+                label="Size"
+                placeholder="S / M / L / XL"
+                {...variantForm.register("size")}
+              />
+              <Input
+                label="Color"
+                placeholder="Black"
+                {...variantForm.register("color")}
+              />
               <Input
                 label="Price ($)"
                 type="number"
                 step="0.01"
                 required
                 error={variantForm.formState.errors.price?.message}
-                {...variantForm.register('price')}
+                {...variantForm.register("price")}
               />
               <Input
                 label="Stock"
@@ -288,7 +332,7 @@ export default function ProductFormPage() {
                 min="0"
                 required
                 error={variantForm.formState.errors.stock?.message}
-                {...variantForm.register('stock')}
+                {...variantForm.register("stock")}
               />
             </div>
             <Button
@@ -304,8 +348,16 @@ export default function ProductFormPage() {
           </form>
 
           <div className="flex justify-between">
-            <Button variant="ghost" onClick={() => setStep('Details')}>Back</Button>
-            <Button onClick={() => setStep('Images')} disabled={!existingProduct?.variants?.length}>
+            <Button variant="ghost" onClick={() => setStep("Details")}>
+              Back
+            </Button>
+            {/* <Button onClick={() => setStep('Images')} disabled={!existingProduct?.variants?.length}>
+              Continue
+            </Button> */}
+            <Button
+              onClick={() => setStep("Images")}
+              disabled={!hasVariants && !existingProduct?.variants?.length}
+            >
               Continue
             </Button>
           </div>
@@ -313,7 +365,7 @@ export default function ProductFormPage() {
       )}
 
       {/* ── Step: Images ── */}
-      {step === 'Images' && (
+      {step === "Images" && (
         <div className="flex flex-col gap-4">
           <div
             onDragOver={(e) => e.preventDefault()}
@@ -326,22 +378,33 @@ export default function ProductFormPage() {
               <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 Drop images here or click to upload
               </p>
-              <p className="text-xs text-gray-400">PNG, JPG, WebP · max 5MB each · up to 5 files</p>
+              <p className="text-xs text-gray-400">
+                PNG, JPG, WebP · max 5MB each · up to 5 files
+              </p>
             </div>
             <input
+              ref={inputRef}
               type="file"
               accept="image/jpeg,image/png,image/webp"
               multiple
               className="hidden"
               onChange={onInputChange}
+
             />
           </div>
 
           {previews.length > 0 && (
             <div className="grid grid-cols-4 gap-3">
               {previews.map((url, i) => (
-                <div key={i} className="aspect-square overflow-hidden rounded-lg bg-gray-100">
-                  <img src={url} alt="" className="h-full w-full object-cover" />
+                <div
+                  key={i}
+                  className="aspect-square overflow-hidden rounded-lg bg-gray-100"
+                >
+                  <img
+                    src={url}
+                    alt=""
+                    className="h-full w-full object-cover"
+                  />
                 </div>
               ))}
             </div>
@@ -353,8 +416,15 @@ export default function ProductFormPage() {
               <p className="mb-2 text-xs text-gray-500">Current images</p>
               <div className="grid grid-cols-4 gap-3">
                 {existingProduct.images.map((img) => (
-                  <div key={img.id} className="aspect-square overflow-hidden rounded-lg bg-gray-100">
-                    <img src={img.url} alt="" className="h-full w-full object-cover" />
+                  <div
+                    key={img.id}
+                    className="aspect-square overflow-hidden rounded-lg bg-gray-100"
+                  >
+                    <img
+                      src={img.url}
+                      alt=""
+                      className="h-full w-full object-cover"
+                    />
                   </div>
                 ))}
               </div>
@@ -362,7 +432,9 @@ export default function ProductFormPage() {
           )}
 
           <div className="flex justify-between">
-            <Button variant="ghost" onClick={() => setStep('Variants')}>Back</Button>
+            <Button variant="ghost" onClick={() => setStep("Variants")}>
+              Back
+            </Button>
             <div className="flex gap-2">
               {files.length > 0 && (
                 <Button
@@ -371,35 +443,43 @@ export default function ProductFormPage() {
                   leftIcon={<Upload className="h-4 w-4" />}
                   onClick={handleUploadImages}
                 >
-                  Upload {files.length} image{files.length !== 1 ? 's' : ''}
+                  Upload {files.length} image{files.length !== 1 ? "s" : ""}
                 </Button>
               )}
-              <Button onClick={() => setStep('Publish')}>Continue</Button>
+              <Button onClick={() => setStep("Publish")}>Continue</Button>
             </div>
           </div>
         </div>
       )}
 
       {/* ── Step: Publish ── */}
-      {step === 'Publish' && (
+      {step === "Publish" && (
         <div className="rounded-xl border border-gray-100 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
           <div className="mb-6 text-center">
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
-              <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              <svg
+                className="h-7 w-7"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
             </div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Ready to publish?</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Ready to publish?
+            </h2>
             <p className="mt-1 text-sm text-gray-500">
               Your product will be visible to customers once published.
             </p>
           </div>
           <div className="flex flex-col gap-3">
-            <Button
-              fullWidth
-              isLoading={updating}
-              onClick={handlePublish}
-            >
+            <Button fullWidth isLoading={updating} onClick={handlePublish}>
               Publish product
             </Button>
             <Button
@@ -413,5 +493,5 @@ export default function ProductFormPage() {
         </div>
       )}
     </div>
-  )
+  );
 }

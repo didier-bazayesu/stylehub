@@ -242,6 +242,31 @@ export interface Product {
   images?: ProductImage[]
   reviews?: Review[]
 }
+export interface ProductListItem {
+  id: string
+  name: string
+  slug: string
+  base_price: number
+  avg_rating: number
+  review_count: number
+  is_featured: boolean
+  image?: string  | undefined        // single pre-resolved URL
+  category: Category
+  vendor?: Vendor
+   variants?: ProductVariant[]
+}
+export interface ProductListItem {
+  id: string
+  name: string
+  slug: string
+  base_price: number
+  avg_rating: number
+  review_count: number
+  is_featured: boolean
+  image?: string | undefined        // single pre-resolved URL
+  category: Category
+  vendor?: Vendor
+}
 
 export interface ProductVariant {
   id: string
@@ -295,7 +320,7 @@ export interface CreateVariantPayload {
 
 export interface Cart {
   id: string
-  user_id: string
+  user_id: string | null  // ← null not string
   items: CartItem[]
   created_at: string
   updated_at: string

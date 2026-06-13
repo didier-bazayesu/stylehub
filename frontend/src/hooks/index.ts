@@ -81,19 +81,28 @@ export function useFileUpload({
   )
 
   const handleFiles = useCallback(
-    (fileList: File[]) => {
-      const validationError = validate(fileList)
-      if (validationError) {
-        setError(validationError)
-        return
-      }
-      setError(null)
-      const selected = multiple ? fileList : [fileList[0]]
-      setFiles(selected)
-      setPreviews(selected.map((f) => URL.createObjectURL(f)))
-    },
-    [validate, multiple],
-  )
+  (fileList: File[]) => {
+    const validationError = validate(fileList)
+    if (validationError) {
+      setError(validationError)
+      return
+    }
+    setError(null)
+    const incoming = multiple ? fileList : [fileList[0]]
+    
+   setFiles((prev) => {
+  const merged = multiple ? [...prev, ...incoming] : incoming
+  return merged.slice(0, 5)  // ← max 5
+})
+   setPreviews((prev) => {
+  const newPreviews = incoming.map((f) => URL.createObjectURL(f))
+  const merged = multiple ? [...prev, ...newPreviews] : newPreviews
+  return merged.slice(0, 5)
+})
+  },
+  [validate, multiple],
+)
+
 
   const onInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {

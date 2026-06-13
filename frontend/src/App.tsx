@@ -536,7 +536,7 @@ import { queryClient } from "@/config/queryClient";
 import { RouterProvider } from "react-router-dom";
 import { router } from "@/router";
 import { useRestoreSession } from "@/api/hooks/useAuth";
-import { useUIStore } from "@/store";
+import { useAuthStore, useCartStore, useUIStore } from "@/store";
 import { useEffect } from "react";
 import { PageLoader } from "@/components/ui/Loading"; // your loading spinner
 
@@ -574,6 +574,15 @@ function ThemeProvider() {
 import { Suspense } from "react";
 
 export default function App() {
+  // App.tsx or root layout
+  const { isAuthenticated } = useAuthStore();
+  const { cart, initGuestCart } = useCartStore();
+
+  useEffect(() => {
+    if (!isAuthenticated && !cart) {
+      initGuestCart();
+    }
+  }, [isAuthenticated]);
   return (
     <QueryClientProvider client={queryClient}>
       <SessionRestorer />
