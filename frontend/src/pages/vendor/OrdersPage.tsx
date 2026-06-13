@@ -3,7 +3,7 @@ import { useVendorOrders, useUpdateOrderItemStatus } from '@/api/hooks/useOrders
 import { Badge } from '@/components/ui/Badge'
 import { Select } from '@/components/ui/Select'
 import { Pagination } from '@/components/ui/Pagination'
-import { PageLoader, TableRowSkeleton } from '@/components/ui/Loading'
+import {  TableRowSkeleton } from '@/components/ui/Loading'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { usePagination } from '@/hooks'
 import {

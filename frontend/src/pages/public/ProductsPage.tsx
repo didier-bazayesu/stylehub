@@ -19,7 +19,7 @@ const SORT_OPTIONS = [
 
 export default function ProductsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [,setFiltersOpen] = useState(false)
 
   const filters: ProductFilters = {
     category: searchParams.get('category') ?? undefined,
