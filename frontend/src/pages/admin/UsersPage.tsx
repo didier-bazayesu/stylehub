@@ -7,7 +7,7 @@ import { TableRowSkeleton } from '@/components/ui/Loading'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { usePagination, useDebounce } from '@/hooks'
 import { formatDate } from '@/lib/utils'
-import { Role, type User } from '@/types'
+import { Role,  } from '@/types'
 import { Search } from 'lucide-react'
 
 const ROLE_COLORS: Record<Role, 'default' | 'info' | 'warning' | 'success' | 'danger'> = {

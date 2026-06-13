@@ -1,7 +1,6 @@
 // WishlistPage.tsx
 import { Heart } from 'lucide-react'
 import { useWishlist, useRemoveFromWishlist } from '@/api/hooks'
-import { useAddToCart } from '@/api/hooks/useCart'
 import { ProductCard } from '@/components/shared/cards/ProductCard'
 import { PageLoader } from '@/components/ui/Loading'
 import { EmptyState } from '@/components/ui/EmptyState'

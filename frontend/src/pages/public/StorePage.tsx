@@ -1,12 +1,11 @@
-import { useParams, Link } from 'react-router-dom'
-import { MapPin } from 'lucide-react'
+import { useParams } from 'react-router-dom'
 import { useStore } from '@/api/hooks'
 import { useInfiniteProducts } from '@/api/hooks/useProducts'
 import { ProductCard } from '@/components/shared/cards/ProductCard'
 import { ProductCardSkeleton } from '@/components/ui/Loading'
 import { Button } from '@/components/ui/Button'
 import { ErrorState } from '@/components/ui/EmptyState'
-import { ROUTES } from '@/config/constants'
+
 
 export default function StorePage() {
   const { slug } = useParams<{ slug: string }>()

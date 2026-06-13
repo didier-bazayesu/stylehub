@@ -1,11 +1,10 @@
-import { NavLink, useNavigate } from 'react-router-dom'
+import { NavLink } from 'react-router-dom'
 import {
   BarChart2,
   Bell,
   ChevronLeft,
   LayoutDashboard,
   Package,
-  Settings,
   ShoppingCart,
   Store,
 } from 'lucide-react'

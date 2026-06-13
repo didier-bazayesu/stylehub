@@ -44,7 +44,7 @@ export function ThemeToggle() {
             <button
               key={value}
               onClick={() => {
-                setTheme(value);
+                setTheme(value as "light" | "dark" | "system");
                 setIsOpen(false);
               }}
               className={cn(

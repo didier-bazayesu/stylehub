@@ -3,7 +3,6 @@ import {
   Bell,
   ChevronLeft,
   Heart,
-  LayoutDashboard,
   MapPin,
   Settings,
   ShoppingBag,

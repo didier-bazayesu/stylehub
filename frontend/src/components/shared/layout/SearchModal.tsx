@@ -5,7 +5,7 @@ import { useUIStore } from '@/store'
 import { useScrollLock } from '@/hooks'
 import { useDebounce } from '@/hooks'
 import { useProducts } from '@/api/hooks/useProducts'
-import { cn, formatCurrency, getProductPrimaryImage, truncate } from '@/lib/utils'
+import { formatCurrency, getProductPrimaryImage, truncate } from '@/lib/utils'
 import { ROUTES } from '@/config/constants'
 
 export function SearchModal() {

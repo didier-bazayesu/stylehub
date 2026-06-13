@@ -57,6 +57,7 @@ $ npm run test:e2e
 $ npm run test:cov
 ```
 
+
 ## Deployment
 
 When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
@@ -86,6 +87,8 @@ Check out a few resources that may come in handy when working with NestJS:
 ## Support
 
 Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+
+> **Note:** Standalone scripts (e.g. `seed.ts`, `clean.ts`) use `@neondatabase/serverless` directly instead of `PrismaClient`, since Prisma v7 requires a driver adapter for Neon and doesn't auto-load `prisma.config.ts` in script context.
 
 ## Stay in touch
 

@@ -171,6 +171,12 @@ export interface Vendor {
   description: string | null
   rejection_reason: string | null
   created_at: string
+    user?: {
+    id: string
+    first_name: string
+    last_name: string
+    email: string
+  }
   store?: Store | null
 }
 
@@ -297,6 +303,7 @@ export interface ProductFilters {
   page?: number
   limit?: number
   cursor?: string
+  status?: ProductStatus
 }
 
 export interface CreateProductPayload {

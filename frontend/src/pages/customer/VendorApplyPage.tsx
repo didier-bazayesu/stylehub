@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { Store, CheckCircle, Clock, XCircle, AlertCircle } from 'lucide-react'
 import { useApplyVendor, useVendorMe } from '@/api/hooks'
 import { Button } from '@/components/ui/Button'
@@ -56,7 +56,6 @@ function StatusScreen({
 
 export default function VendorApplyPage() {
   const { user } = useAuthStore()
-  const navigate = useNavigate()
   const { data: vendor, isLoading: vendorLoading } = useVendorMe()
   const { mutate: apply, isPending } = useApplyVendor()
 

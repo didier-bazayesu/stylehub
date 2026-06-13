@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Package } from 'lucide-react'
+import { ArrowLeft} from 'lucide-react'
 import { useOrder } from '@/api/hooks/useOrders'
 import { Badge } from '@/components/ui/Badge'
 import { PageLoader } from '@/components/ui/Loading'

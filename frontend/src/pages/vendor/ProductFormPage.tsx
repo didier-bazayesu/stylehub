@@ -73,7 +73,7 @@ export default function ProductFormPage() {
     multiple: true,
     maxSizeBytes: 5 * 1024 * 1024,
   })
-  const { mutate: updateStatus, isPending: publishing } =
+  const { mutate: updateStatus} =
     useUpdateProductStatus();
 
   const detailsForm = useForm<DetailsValues>({ resolver: zodResolver(detailsSchema) })

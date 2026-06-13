@@ -23,14 +23,14 @@ export function useCart() {
 
 export function useAddToCart() {
   const qc = useQueryClient()
-  const { optimisticAddItem } = useCartStore()
+
 
   return useMutation({
     mutationFn: async (payload: AddToCartPayload) => {
       const { data } = await apiClient.post<ApiResponse<Cart>>('/cart/items', payload)
       return data.data
     },
-    onMutate: async ({ variant_id, quantity }) => {
+    onMutate: async () => {
       await qc.cancelQueries({ queryKey: QUERY_KEYS.cart })
       const previous = qc.getQueryData<Cart>(QUERY_KEYS.cart)
 

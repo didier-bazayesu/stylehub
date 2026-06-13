@@ -6,9 +6,9 @@ import { useAddToCart } from '@/api/hooks/useCart'
 import { useAddToWishlist, useRemoveFromWishlist, useWishlist, useReviews } from '@/api/hooks'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
-import { PageLoader, ProductCardSkeleton } from '@/components/ui/Loading'
+import { PageLoader} from '@/components/ui/Loading'
 import { ErrorState } from '@/components/ui/EmptyState'
-import { ProductCard } from '@/components/shared/cards/ProductCard'
+
 import {
   cn,
   formatCurrency,
