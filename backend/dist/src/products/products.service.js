@@ -94,6 +94,43 @@ let ProductsService = class ProductsService {
         });
         return products.map((product) => this.mapProductListItem(product));
     }
+    async findOwn(userId, query) {
+        const vendor = await this.vendorsService.requireApprovedVendor(userId);
+        const page = query.page ?? 1;
+        const limit = Math.min(query.limit ?? 20, 100);
+        const skip = (page - 1) * limit;
+        const where = {
+            vendor_id: vendor.id,
+            deleted_at: null,
+        };
+        if (query.status) {
+            where.status = query.status;
+        }
+        if (query.search) {
+            where.OR = [
+                { name: { contains: query.search, mode: 'insensitive' } },
+                { slug: { contains: query.search, mode: 'insensitive' } },
+            ];
+        }
+        const orderBy = this.getSortOrder(query.sort);
+        const [products, total] = await Promise.all([
+            this.prisma.product.findMany({
+                where,
+                skip,
+                take: limit,
+                orderBy,
+                include: {
+                    images: { where: { is_primary: true }, take: 1 },
+                    category: { select: { id: true, name: true, slug: true } },
+                },
+            }),
+            this.prisma.product.count({ where }),
+        ]);
+        return {
+            data: products.map((product) => this.mapProductListItem(product)),
+            meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+        };
+    }
     async findBySlug(slug) {
         const product = await this.prisma.product.findFirst({
             where: {
@@ -151,11 +188,82 @@ let ProductsService = class ProductsService {
                 comment: review.comment,
                 is_verified_purchase: review.is_verified_purchase,
                 created_at: review.created_at,
-                user: {
-                    first_name: review.user.first_name,
-                    last_name: review.user.last_name,
-                    avatar_url: review.user.avatar_url,
+                user: review.user
+                    ? {
+                        first_name: review.user.first_name,
+                        last_name: review.user.last_name,
+                        avatar_url: review.user.avatar_url,
+                    }
+                    : null,
+            })),
+            created_at: product.created_at,
+        };
+    }
+    async findOwnProductBySlug(userId, slug) {
+        const vendor = await this.vendorsService.requireApprovedVendor(userId);
+        const product = await this.prisma.product.findFirst({
+            where: {
+                slug,
+                vendor_id: vendor.id,
+                deleted_at: null,
+            },
+            include: {
+                images: { orderBy: { display_order: 'asc' } },
+                variants: { orderBy: { price: 'asc' } },
+                category: { select: { id: true, name: true, slug: true } },
+                vendor: {
+                    select: {
+                        id: true,
+                        business_name: true,
+                        store: { select: { name: true, slug: true, logo_url: true } },
+                    },
                 },
+                reviews: {
+                    where: { deleted_at: null },
+                    take: 5,
+                    orderBy: { created_at: 'desc' },
+                    include: {
+                        user: {
+                            select: { first_name: true, last_name: true, avatar_url: true },
+                        },
+                    },
+                },
+            },
+        });
+        if (!product) {
+            throw new common_1.NotFoundException({
+                code: 'PRODUCT_NOT_FOUND',
+                message: 'Product not found.',
+            });
+        }
+        return {
+            id: product.id,
+            name: product.name,
+            slug: product.slug,
+            description: product.description,
+            base_price: product.base_price,
+            status: product.status,
+            is_featured: product.is_featured,
+            total_stock: product.total_stock,
+            avg_rating: product.avg_rating,
+            review_count: product.review_count,
+            images: product.images,
+            variants: product.variants,
+            category: product.category,
+            vendor: product.vendor,
+            reviews: product.reviews.map((review) => ({
+                id: review.id,
+                rating: review.rating,
+                comment: review.comment,
+                is_verified_purchase: review.is_verified_purchase,
+                created_at: review.created_at,
+                user: review.user
+                    ? {
+                        first_name: review.user.first_name,
+                        last_name: review.user.last_name,
+                        avatar_url: review.user.avatar_url,
+                    }
+                    : null,
             })),
             created_at: product.created_at,
         };
@@ -251,7 +359,11 @@ let ProductsService = class ProductsService {
         const product = await this.findOwnedProduct(vendor.id, productId);
         await this.prisma.product.update({
             where: { id: product.id },
-            data: { deleted_at: new Date(), status: client_1.ProductStatus.ARCHIVED },
+            data: {
+                deleted_at: new Date(),
+                status: client_1.ProductStatus.ARCHIVED,
+                archive_reason: client_1.ArchiveReason.MANUAL,
+            },
         });
         return { message: 'Product deleted successfully.' };
     }
@@ -446,9 +558,11 @@ let ProductsService = class ProductsService {
             id: product.id,
             name: product.name,
             slug: product.slug,
+            status: product.status,
             base_price: product.base_price,
             avg_rating: product.avg_rating,
             review_count: product.review_count,
+            total_stock: product.total_stock,
             is_featured: product.is_featured,
             image: product.images[0]?.url ?? null,
             category: product.category,

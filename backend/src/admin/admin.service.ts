@@ -5,6 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import {
+  ArchiveReason,
   NotificationType,
   Prisma,
   ProductStatus,
@@ -13,6 +14,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { OrdersService } from '../orders/orders.service';
 import {
   AdminUsersQueryDto,
   UpdateUserStatusDto,
@@ -30,6 +32,7 @@ export class AdminService {
   constructor(
     private prisma: PrismaService,
     private notificationsService: NotificationsService,
+    private ordersService: OrdersService,
   ) {}
 
   async listUsers(query: AdminUsersQueryDto) {
@@ -86,6 +89,7 @@ export class AdminService {
   ) {
     const user = await this.prisma.user.findFirst({
       where: { id: userId, deleted_at: null },
+      include: { vendor: { select: { id: true, status: true, business_name: true } } },
     });
 
     if (!user) {
@@ -100,6 +104,69 @@ export class AdminService {
         code: 'FORBIDDEN',
         message: 'Cannot deactivate a super admin account.',
       });
+    }
+
+    // If user has a vendor account, handle vendor status along with user status
+    if (user.vendor) {
+      if (dto.is_active === true) {
+        // ── Reactivating ──────────────────────────────────────────────
+        // Only restore products that were archived BY THE SYSTEM (VENDOR_DISABLED).
+        // Products the vendor manually archived (MANUAL, POLICY, etc.) stay ARCHIVED.
+        await this.prisma.product.updateMany({
+          where: {
+            vendor_id: user.vendor.id,
+            deleted_at: null,
+            archive_reason: ArchiveReason.VENDOR_DISABLED,
+          },
+          data: {
+            status: ProductStatus.ACTIVE,
+            archive_reason: null,
+          },
+        });
+
+        // Restore vendor to approved status
+        await this.prisma.vendor.update({
+          where: { id: user.vendor.id },
+          data: { status: VendorStatus.APPROVED },
+        });
+
+        await this.notificationsService.create({
+          user_id: userId,
+          type: NotificationType.SYSTEM,
+          title: 'Account reactivated',
+          message: `Your vendor account "${user.vendor.business_name}" has been reactivated. Your active products have been restored.`,
+          data: { vendor_id: user.vendor.id },
+        });
+      } else {
+        // ── Deactivating ─────────────────────────────────────────────
+        // Archive only products that are NOT already archived.
+        // This preserves the vendor's intentional ARCHIVED/MANUAL state.
+        await this.prisma.product.updateMany({
+          where: {
+            vendor_id: user.vendor.id,
+            deleted_at: null,
+            status: { not: ProductStatus.ARCHIVED },
+          },
+          data: {
+            status: ProductStatus.ARCHIVED,
+            archive_reason: ArchiveReason.VENDOR_DISABLED,
+          },
+        });
+
+        // Suspend the vendor account
+        await this.prisma.vendor.update({
+          where: { id: user.vendor.id },
+          data: { status: VendorStatus.SUSPENDED },
+        });
+
+        await this.notificationsService.create({
+          user_id: userId,
+          type: NotificationType.SYSTEM,
+          title: 'Account deactivated',
+          message: `Your vendor account "${user.vendor.business_name}" has been deactivated and your products have been hidden.`,
+          data: { vendor_id: user.vendor.id },
+        });
+      }
     }
 
     const updated = await this.prisma.user.update({
@@ -395,10 +462,14 @@ export class AdminService {
       });
     }
 
+    // Soft-delete: preserves product reference on existing OrderItems.
+    // The product is hidden from all public/vendor queries (deleted_at != null)
+    // but order history remains intact.
+    const now = new Date();
     await this.prisma.product.update({
       where: { id: productId },
       data: {
-        deleted_at: new Date(),
+        deleted_at: now,
         status: ProductStatus.ARCHIVED,
       },
     });
@@ -409,11 +480,11 @@ export class AdminService {
       entity: 'Product',
       entityId: productId,
       oldValue: { name: product.name, status: product.status },
-      newValue: { deleted_at: new Date().toISOString() },
+      newValue: { deleted_at: now.toISOString(), status: ProductStatus.ARCHIVED },
       ipAddress,
     });
 
-    return { message: 'Product force-deleted successfully.' };
+    return { message: 'Product removed successfully.' };
   }
 
   async listOrders(query: AdminOrdersQueryDto) {
@@ -462,6 +533,36 @@ export class AdminService {
       })),
       meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
     };
+  }
+
+  async cancelOrderItem(adminId: string, orderItemId: string, ipAddress?: string) {
+    const result = await this.ordersService.adminCancelOrderItem(orderItemId);
+
+    await this.logAudit({
+      userId: adminId,
+      action: 'CANCEL_ORDER_ITEM',
+      entity: 'OrderItem',
+      entityId: orderItemId,
+      newValue: { status: 'CANCELLED' },
+      ipAddress,
+    });
+
+    return result;
+  }
+
+  async refundOrderItem(adminId: string, orderItemId: string, ipAddress?: string) {
+    const result = await this.ordersService.adminRefundOrderItem(orderItemId);
+
+    await this.logAudit({
+      userId: adminId,
+      action: 'REFUND_ORDER_ITEM',
+      entity: 'OrderItem',
+      entityId: orderItemId,
+      newValue: { status: 'REFUNDED' },
+      ipAddress,
+    });
+
+    return result;
   }
 
   async listAuditLogs(query: PaginationQueryDto) {

@@ -1,6 +1,7 @@
 import { IsEnum, IsNumber, IsOptional, IsPositive, IsString } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
+import { ProductStatus } from '@prisma/client';
 import { PaginationQueryDto } from '../../common/dto';
 
 export enum ProductSort {
@@ -44,4 +45,10 @@ export class ProductQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsEnum(ProductSort)
   sort?: ProductSort = ProductSort.NEWEST;
+
+  // Used by vendor dashboard to filter own products by status
+  @ApiPropertyOptional({ enum: ProductStatus })
+  @IsOptional()
+  @IsEnum(ProductStatus)
+  status?: ProductStatus;
 }

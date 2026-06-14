@@ -14,12 +14,15 @@ const common_1 = require("@nestjs/common");
 const client_1 = require("@prisma/client");
 const prisma_service_1 = require("../prisma/prisma.service");
 const notifications_service_1 = require("../notifications/notifications.service");
+const orders_service_1 = require("../orders/orders.service");
 let AdminService = class AdminService {
     prisma;
     notificationsService;
-    constructor(prisma, notificationsService) {
+    ordersService;
+    constructor(prisma, notificationsService, ordersService) {
         this.prisma = prisma;
         this.notificationsService = notificationsService;
+        this.ordersService = ordersService;
     }
     async listUsers(query) {
         const page = query.page ?? 1;
@@ -64,6 +67,7 @@ let AdminService = class AdminService {
     async updateUserStatus(adminId, userId, dto, ipAddress) {
         const user = await this.prisma.user.findFirst({
             where: { id: userId, deleted_at: null },
+            include: { vendor: { select: { id: true, status: true, business_name: true } } },
         });
         if (!user) {
             throw new common_1.NotFoundException({
@@ -76,6 +80,56 @@ let AdminService = class AdminService {
                 code: 'FORBIDDEN',
                 message: 'Cannot deactivate a super admin account.',
             });
+        }
+        if (user.vendor) {
+            if (dto.is_active === true) {
+                await this.prisma.product.updateMany({
+                    where: {
+                        vendor_id: user.vendor.id,
+                        deleted_at: null,
+                        archive_reason: client_1.ArchiveReason.VENDOR_DISABLED,
+                    },
+                    data: {
+                        status: client_1.ProductStatus.ACTIVE,
+                        archive_reason: null,
+                    },
+                });
+                await this.prisma.vendor.update({
+                    where: { id: user.vendor.id },
+                    data: { status: client_1.VendorStatus.APPROVED },
+                });
+                await this.notificationsService.create({
+                    user_id: userId,
+                    type: client_1.NotificationType.SYSTEM,
+                    title: 'Account reactivated',
+                    message: `Your vendor account "${user.vendor.business_name}" has been reactivated. Your active products have been restored.`,
+                    data: { vendor_id: user.vendor.id },
+                });
+            }
+            else {
+                await this.prisma.product.updateMany({
+                    where: {
+                        vendor_id: user.vendor.id,
+                        deleted_at: null,
+                        status: { not: client_1.ProductStatus.ARCHIVED },
+                    },
+                    data: {
+                        status: client_1.ProductStatus.ARCHIVED,
+                        archive_reason: client_1.ArchiveReason.VENDOR_DISABLED,
+                    },
+                });
+                await this.prisma.vendor.update({
+                    where: { id: user.vendor.id },
+                    data: { status: client_1.VendorStatus.SUSPENDED },
+                });
+                await this.notificationsService.create({
+                    user_id: userId,
+                    type: client_1.NotificationType.SYSTEM,
+                    title: 'Account deactivated',
+                    message: `Your vendor account "${user.vendor.business_name}" has been deactivated and your products have been hidden.`,
+                    data: { vendor_id: user.vendor.id },
+                });
+            }
         }
         const updated = await this.prisma.user.update({
             where: { id: userId },
@@ -325,10 +379,11 @@ let AdminService = class AdminService {
                 message: 'Product not found.',
             });
         }
+        const now = new Date();
         await this.prisma.product.update({
             where: { id: productId },
             data: {
-                deleted_at: new Date(),
+                deleted_at: now,
                 status: client_1.ProductStatus.ARCHIVED,
             },
         });
@@ -338,10 +393,10 @@ let AdminService = class AdminService {
             entity: 'Product',
             entityId: productId,
             oldValue: { name: product.name, status: product.status },
-            newValue: { deleted_at: new Date().toISOString() },
+            newValue: { deleted_at: now.toISOString(), status: client_1.ProductStatus.ARCHIVED },
             ipAddress,
         });
-        return { message: 'Product force-deleted successfully.' };
+        return { message: 'Product removed successfully.' };
     }
     async listOrders(query) {
         const page = query.page ?? 1;
@@ -385,6 +440,30 @@ let AdminService = class AdminService {
             })),
             meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
         };
+    }
+    async cancelOrderItem(adminId, orderItemId, ipAddress) {
+        const result = await this.ordersService.adminCancelOrderItem(orderItemId);
+        await this.logAudit({
+            userId: adminId,
+            action: 'CANCEL_ORDER_ITEM',
+            entity: 'OrderItem',
+            entityId: orderItemId,
+            newValue: { status: 'CANCELLED' },
+            ipAddress,
+        });
+        return result;
+    }
+    async refundOrderItem(adminId, orderItemId, ipAddress) {
+        const result = await this.ordersService.adminRefundOrderItem(orderItemId);
+        await this.logAudit({
+            userId: adminId,
+            action: 'REFUND_ORDER_ITEM',
+            entity: 'OrderItem',
+            entityId: orderItemId,
+            newValue: { status: 'REFUNDED' },
+            ipAddress,
+        });
+        return result;
     }
     async listAuditLogs(query) {
         const page = query.page ?? 1;
@@ -556,6 +635,7 @@ exports.AdminService = AdminService;
 exports.AdminService = AdminService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
-        notifications_service_1.NotificationsService])
+        notifications_service_1.NotificationsService,
+        orders_service_1.OrdersService])
 ], AdminService);
 //# sourceMappingURL=admin.service.js.map

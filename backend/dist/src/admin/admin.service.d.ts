@@ -1,12 +1,14 @@
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { OrdersService } from '../orders/orders.service';
 import { AdminUsersQueryDto, UpdateUserStatusDto, AdminVendorsQueryDto, RejectVendorDto, AdminProductsQueryDto, AdminOrdersQueryDto, CreateCouponDto, UpdateCouponDto } from './dto';
 import { PaginationQueryDto } from '../common/dto';
 export declare class AdminService {
     private prisma;
     private notificationsService;
-    constructor(prisma: PrismaService, notificationsService: NotificationsService);
+    private ordersService;
+    constructor(prisma: PrismaService, notificationsService: NotificationsService, ordersService: OrdersService);
     listUsers(query: AdminUsersQueryDto): Promise<{
         data: {
             id: string;
@@ -139,6 +141,16 @@ export declare class AdminService {
             total: number;
             totalPages: number;
         };
+    }>;
+    cancelOrderItem(adminId: string, orderItemId: string, ipAddress?: string): Promise<{
+        id: string;
+        status: import("@prisma/client").$Enums.OrderStatus;
+        message: string;
+    }>;
+    refundOrderItem(adminId: string, orderItemId: string, ipAddress?: string): Promise<{
+        id: string;
+        status: "REFUNDED";
+        message: string;
     }>;
     listAuditLogs(query: PaginationQueryDto): Promise<{
         data: {

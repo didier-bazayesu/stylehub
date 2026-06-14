@@ -4,13 +4,17 @@ import {
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
-import { Role, VendorStatus } from '@prisma/client';
+import { NotificationType, Role, VendorStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { ApplyVendorDto, UpdateVendorDto } from './dto';
 
 @Injectable()
 export class VendorsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificationsService: NotificationsService,
+  ) {}
 
   async apply(userId: string, dto: ApplyVendorDto) {
     const user = await this.prisma.user.findFirst({
@@ -49,6 +53,13 @@ export class VendorsService {
       });
 
       return createdVendor;
+    });
+
+    await this.notificationsService.notifyAdmins({
+      type: NotificationType.SYSTEM,
+      title: 'Vendor application submitted',
+      message: `${vendor.business_name} (${vendor.business_email}) submitted a vendor application and is awaiting approval.`,
+      data: { vendor_id: vendor.id, user_id: userId },
     });
 
     return {

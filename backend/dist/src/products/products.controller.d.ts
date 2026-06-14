@@ -7,9 +7,11 @@ export declare class ProductsController {
         id: string;
         name: string;
         slug: string;
+        status: import("@prisma/client").$Enums.ProductStatus;
         base_price: import("@prisma/client-runtime-utils").Decimal;
         avg_rating: number;
         review_count: number;
+        total_stock: number;
         is_featured: boolean;
         image: string;
         category: {
@@ -31,9 +33,100 @@ export declare class ProductsController {
             id: string;
             name: string;
             slug: string;
+            status: import("@prisma/client").$Enums.ProductStatus;
             base_price: import("@prisma/client-runtime-utils").Decimal;
             avg_rating: number;
             review_count: number;
+            total_stock: number;
+            is_featured: boolean;
+            image: string;
+            category: {
+                id: string;
+                name: string;
+                slug: string;
+            };
+            vendor: {
+                id: string;
+                business_name: string;
+                store: {
+                    name: string;
+                    slug: string;
+                } | null;
+            } | undefined;
+        }[];
+        meta: {
+            page: number;
+            limit: number;
+            total: number;
+            totalPages: number;
+        };
+    }>;
+    findOwnProductBySlug(userId: string, slug: string): Promise<{
+        id: string;
+        name: string;
+        slug: string;
+        description: string;
+        base_price: import("@prisma/client-runtime-utils").Decimal;
+        status: import("@prisma/client").$Enums.ProductStatus;
+        is_featured: boolean;
+        total_stock: number;
+        avg_rating: number;
+        review_count: number;
+        images: {
+            url: string;
+            id: string;
+            product_id: string;
+            public_id: string;
+            is_primary: boolean;
+            display_order: number;
+        }[];
+        variants: {
+            id: string;
+            product_id: string;
+            sku: string;
+            size: string | null;
+            color: string | null;
+            price: import("@prisma/client-runtime-utils").Decimal;
+            stock: number;
+        }[];
+        category: {
+            id: string;
+            name: string;
+            slug: string;
+        };
+        vendor: {
+            id: string;
+            store: {
+                name: string;
+                slug: string;
+                logo_url: string | null;
+            } | null;
+            business_name: string;
+        };
+        reviews: {
+            id: string;
+            rating: number;
+            comment: string | null;
+            is_verified_purchase: boolean;
+            created_at: Date;
+            user: {
+                first_name: string;
+                last_name: string;
+                avatar_url: string | null;
+            } | null;
+        }[];
+        created_at: Date;
+    }>;
+    findOwn(userId: string, query: ProductQueryDto): Promise<{
+        data: {
+            id: string;
+            name: string;
+            slug: string;
+            status: import("@prisma/client").$Enums.ProductStatus;
+            base_price: import("@prisma/client-runtime-utils").Decimal;
+            avg_rating: number;
+            review_count: number;
+            total_stock: number;
             is_featured: boolean;
             image: string;
             category: {
@@ -109,7 +202,7 @@ export declare class ProductsController {
                 first_name: string;
                 last_name: string;
                 avatar_url: string | null;
-            };
+            } | null;
         }[];
         created_at: Date;
     }>;

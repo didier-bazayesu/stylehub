@@ -183,13 +183,32 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
                 data: { status: client_1.OrderStatus.CONFIRMED },
             }),
         ]);
-        await this.notificationsService.create({
-            user_id: payment.order.user_id,
+        const orderRef = `#${orderId.slice(-8).toUpperCase()}`;
+        await this.notificationsService.notifyCustomer(payment.order.user_id, {
             type: client_1.NotificationType.ORDER_UPDATE,
             title: 'Payment confirmed',
-            message: `Your payment of $${payment.order.total} was successful. Your order is confirmed.`,
+            message: `Payment of $${payment.order.total} received for order ${orderRef}. Your order is confirmed.`,
             data: { order_id: orderId },
         });
+        const orderItems = await this.prisma.orderItem.findMany({
+            where: { order_id: orderId },
+            include: {
+                vendor: { select: { user_id: true } },
+                product: { select: { name: true } },
+            },
+        });
+        const notifiedVendors = new Set();
+        for (const item of orderItems) {
+            if (notifiedVendors.has(item.vendor.user_id))
+                continue;
+            notifiedVendors.add(item.vendor.user_id);
+            await this.notificationsService.notifyVendor(item.vendor.user_id, {
+                type: client_1.NotificationType.ORDER_UPDATE,
+                title: 'Payment confirmed',
+                message: `Payment confirmed for order ${orderRef}. You can start processing.`,
+                data: { order_id: orderId },
+            });
+        }
     }
     async handlePaymentFailed(paymentIntent) {
         const orderId = paymentIntent.metadata.order_id;

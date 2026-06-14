@@ -13,10 +13,13 @@ exports.VendorsService = void 0;
 const common_1 = require("@nestjs/common");
 const client_1 = require("@prisma/client");
 const prisma_service_1 = require("../prisma/prisma.service");
+const notifications_service_1 = require("../notifications/notifications.service");
 let VendorsService = class VendorsService {
     prisma;
-    constructor(prisma) {
+    notificationsService;
+    constructor(prisma, notificationsService) {
         this.prisma = prisma;
+        this.notificationsService = notificationsService;
     }
     async apply(userId, dto) {
         const user = await this.prisma.user.findFirst({
@@ -50,6 +53,12 @@ let VendorsService = class VendorsService {
                 data: { role: client_1.Role.VENDOR },
             });
             return createdVendor;
+        });
+        await this.notificationsService.notifyAdmins({
+            type: client_1.NotificationType.SYSTEM,
+            title: 'Vendor application submitted',
+            message: `${vendor.business_name} (${vendor.business_email}) submitted a vendor application and is awaiting approval.`,
+            data: { vendor_id: vendor.id, user_id: userId },
         });
         return {
             id: vendor.id,
@@ -153,6 +162,7 @@ let VendorsService = class VendorsService {
 exports.VendorsService = VendorsService;
 exports.VendorsService = VendorsService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        notifications_service_1.NotificationsService])
 ], VendorsService);
 //# sourceMappingURL=vendors.service.js.map

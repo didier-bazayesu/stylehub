@@ -138,6 +138,16 @@ export declare class AdminController {
             totalPages: number;
         };
     }>;
+    cancelOrderItem(adminId: string, orderItemId: string, req: Request): Promise<{
+        id: string;
+        status: import("@prisma/client").$Enums.OrderStatus;
+        message: string;
+    }>;
+    refundOrderItem(adminId: string, orderItemId: string, req: Request): Promise<{
+        id: string;
+        status: "REFUNDED";
+        message: string;
+    }>;
     listAuditLogs(query: PaginationQueryDto): Promise<{
         data: {
             id: string;

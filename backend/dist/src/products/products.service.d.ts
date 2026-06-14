@@ -13,9 +13,11 @@ export declare class ProductsService {
             id: string;
             name: string;
             slug: string;
+            status: import("@prisma/client").$Enums.ProductStatus;
             base_price: Prisma.Decimal;
             avg_rating: number;
             review_count: number;
+            total_stock: number;
             is_featured: boolean;
             image: string;
             category: {
@@ -43,9 +45,11 @@ export declare class ProductsService {
         id: string;
         name: string;
         slug: string;
+        status: import("@prisma/client").$Enums.ProductStatus;
         base_price: Prisma.Decimal;
         avg_rating: number;
         review_count: number;
+        total_stock: number;
         is_featured: boolean;
         image: string;
         category: {
@@ -62,6 +66,39 @@ export declare class ProductsService {
             } | null;
         } | undefined;
     }[]>;
+    findOwn(userId: string, query: ProductQueryDto): Promise<{
+        data: {
+            id: string;
+            name: string;
+            slug: string;
+            status: import("@prisma/client").$Enums.ProductStatus;
+            base_price: Prisma.Decimal;
+            avg_rating: number;
+            review_count: number;
+            total_stock: number;
+            is_featured: boolean;
+            image: string;
+            category: {
+                id: string;
+                name: string;
+                slug: string;
+            };
+            vendor: {
+                id: string;
+                business_name: string;
+                store: {
+                    name: string;
+                    slug: string;
+                } | null;
+            } | undefined;
+        }[];
+        meta: {
+            page: number;
+            limit: number;
+            total: number;
+            totalPages: number;
+        };
+    }>;
     findBySlug(slug: string): Promise<{
         id: string;
         name: string;
@@ -114,7 +151,63 @@ export declare class ProductsService {
                 first_name: string;
                 last_name: string;
                 avatar_url: string | null;
-            };
+            } | null;
+        }[];
+        created_at: Date;
+    }>;
+    findOwnProductBySlug(userId: string, slug: string): Promise<{
+        id: string;
+        name: string;
+        slug: string;
+        description: string;
+        base_price: Prisma.Decimal;
+        status: import("@prisma/client").$Enums.ProductStatus;
+        is_featured: boolean;
+        total_stock: number;
+        avg_rating: number;
+        review_count: number;
+        images: {
+            url: string;
+            id: string;
+            product_id: string;
+            public_id: string;
+            is_primary: boolean;
+            display_order: number;
+        }[];
+        variants: {
+            id: string;
+            product_id: string;
+            sku: string;
+            size: string | null;
+            color: string | null;
+            price: Prisma.Decimal;
+            stock: number;
+        }[];
+        category: {
+            id: string;
+            name: string;
+            slug: string;
+        };
+        vendor: {
+            id: string;
+            store: {
+                name: string;
+                slug: string;
+                logo_url: string | null;
+            } | null;
+            business_name: string;
+        };
+        reviews: {
+            id: string;
+            rating: number;
+            comment: string | null;
+            is_verified_purchase: boolean;
+            created_at: Date;
+            user: {
+                first_name: string;
+                last_name: string;
+                avatar_url: string | null;
+            } | null;
         }[];
         created_at: Date;
     }>;

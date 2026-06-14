@@ -52,13 +52,18 @@ export declare class OrdersController {
                 images: {
                     url: string;
                 }[];
+            } | {
+                id: null;
+                name: string;
+                slug: null;
+                image: null;
             };
             variant: {
                 id: string;
                 sku: string;
                 size: string | null;
                 color: string | null;
-            };
+            } | null;
             vendor: {
                 id: string;
                 store: {
@@ -104,13 +109,13 @@ export declare class OrdersController {
                 id: string;
                 name: string;
                 slug: string;
-            };
+            } | null;
             variant: {
                 id: string;
                 sku: string;
                 size: string | null;
                 color: string | null;
-            };
+            } | null;
         }[];
         meta: {
             page: number;
@@ -126,13 +131,13 @@ export declare class OrdersController {
             id: string;
             name: string;
             slug: string;
-        };
+        } | null;
         variant: {
             id: string;
             sku: string;
             size: string | null;
             color: string | null;
-        };
+        } | null;
         message: string;
     }>;
     findAll(userId: string, query: PaginationQueryDto): Promise<{
@@ -155,7 +160,7 @@ export declare class OrdersController {
                     id: string;
                     name: string;
                     slug: string;
-                };
+                } | null;
             }[];
         }[];
         meta: {
@@ -213,13 +218,18 @@ export declare class OrdersController {
                 images: {
                     url: string;
                 }[];
+            } | {
+                id: null;
+                name: string;
+                slug: null;
+                image: null;
             };
             variant: {
                 id: string;
                 sku: string;
                 size: string | null;
                 color: string | null;
-            };
+            } | null;
             vendor: {
                 id: string;
                 store: {

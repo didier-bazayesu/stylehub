@@ -46,6 +46,12 @@ let ProductsController = class ProductsController {
     findAll(query) {
         return this.productsService.findAll(query);
     }
+    findOwnProductBySlug(userId, slug) {
+        return this.productsService.findOwnProductBySlug(userId, slug);
+    }
+    findOwn(userId, query) {
+        return this.productsService.findOwn(userId, query);
+    }
     findBySlug(slug) {
         return this.productsService.findBySlug(slug);
     }
@@ -101,6 +107,28 @@ __decorate([
     __metadata("design:paramtypes", [dto_1.ProductQueryDto]),
     __metadata("design:returntype", void 0)
 ], ProductsController.prototype, "findAll", null);
+__decorate([
+    (0, common_1.Get)('manage/:slug'),
+    (0, swagger_1.ApiBearerAuth)(),
+    (0, decorators_1.Roles)(client_1.Role.VENDOR),
+    (0, swagger_1.ApiOperation)({ summary: 'Get own product by slug for editing' }),
+    __param(0, (0, decorators_1.CurrentUser)('id')),
+    __param(1, (0, common_1.Param)('slug')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", void 0)
+], ProductsController.prototype, "findOwnProductBySlug", null);
+__decorate([
+    (0, common_1.Get)('manage'),
+    (0, swagger_1.ApiBearerAuth)(),
+    (0, decorators_1.Roles)(client_1.Role.VENDOR),
+    (0, swagger_1.ApiOperation)({ summary: 'List own products — all statuses (vendor dashboard)' }),
+    __param(0, (0, decorators_1.CurrentUser)('id')),
+    __param(1, (0, common_1.Query)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, dto_1.ProductQueryDto]),
+    __metadata("design:returntype", void 0)
+], ProductsController.prototype, "findOwn", null);
 __decorate([
     (0, decorators_1.Public)(),
     (0, common_1.Get)(':slug'),

@@ -73,6 +73,30 @@ export class ProductsController {
     return this.productsService.findAll(query);
   }
 
+  @Get('manage/:slug')
+  @ApiBearerAuth()
+  @Roles(Role.VENDOR)
+  @ApiOperation({ summary: 'Get own product by slug for editing' })
+  findOwnProductBySlug(
+    @CurrentUser('id') userId: string,
+    @Param('slug') slug: string,
+  ) {
+    return this.productsService.findOwnProductBySlug(userId, slug);
+  }
+
+  // NOTE: This route must be defined before @Get(':slug') to avoid
+  // NestJS routing 'manage' as a product slug.
+  @Get('manage')
+  @ApiBearerAuth()
+  @Roles(Role.VENDOR)
+  @ApiOperation({ summary: 'List own products — all statuses (vendor dashboard)' })
+  findOwn(
+    @CurrentUser('id') userId: string,
+    @Query() query: ProductQueryDto,
+  ) {
+    return this.productsService.findOwn(userId, query);
+  }
+
   @Public()
   @Get(':slug')
   @ApiOperation({ summary: 'Get single product by slug' })

@@ -1,3 +1,4 @@
+import { ProductStatus } from '@prisma/client';
 import { PaginationQueryDto } from '../../common/dto';
 export declare enum ProductSort {
     NEWEST = "newest",
@@ -12,4 +13,5 @@ export declare class ProductQueryDto extends PaginationQueryDto {
     minPrice?: number;
     maxPrice?: number;
     sort?: ProductSort;
+    status?: ProductStatus;
 }

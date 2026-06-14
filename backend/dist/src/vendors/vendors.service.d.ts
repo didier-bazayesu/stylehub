@@ -1,8 +1,10 @@
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { ApplyVendorDto, UpdateVendorDto } from './dto';
 export declare class VendorsService {
     private prisma;
-    constructor(prisma: PrismaService);
+    private notificationsService;
+    constructor(prisma: PrismaService, notificationsService: NotificationsService);
     apply(userId: string, dto: ApplyVendorDto): Promise<{
         id: string;
         status: import("@prisma/client").$Enums.VendorStatus;
@@ -43,8 +45,8 @@ export declare class VendorsService {
         created_at: Date;
         updated_at: Date;
         deleted_at: Date | null;
-        description: string | null;
         user_id: string;
+        description: string | null;
         status: import("@prisma/client").$Enums.VendorStatus;
         business_name: string;
         business_email: string;

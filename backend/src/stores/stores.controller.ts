@@ -68,7 +68,7 @@ export class StoresController {
   @Roles(Role.VENDOR)
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Upload store logo' })
-  @UseInterceptors(FileInterceptor('file', imageUploadOptions))
+  @UseInterceptors(FileInterceptor('logo', imageUploadOptions))
   uploadLogo(
     @CurrentUser('id') userId: string,
     @UploadedFile() file: Express.Multer.File,
@@ -76,7 +76,7 @@ export class StoresController {
     if (!file) {
       throw new BadRequestException({
         code: 'FILE_REQUIRED',
-        message: 'Image file is required.',
+        message: 'Image file is required. Send the file under the field name "logo".',
       });
     }
 
@@ -88,7 +88,7 @@ export class StoresController {
   @Roles(Role.VENDOR)
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Upload store banner' })
-  @UseInterceptors(FileInterceptor('file', imageUploadOptions))
+  @UseInterceptors(FileInterceptor('banner', imageUploadOptions))
   uploadBanner(
     @CurrentUser('id') userId: string,
     @UploadedFile() file: Express.Multer.File,
@@ -96,7 +96,7 @@ export class StoresController {
     if (!file) {
       throw new BadRequestException({
         code: 'FILE_REQUIRED',
-        message: 'Image file is required.',
+        message: 'Image file is required. Send the file under the field name "banner".',
       });
     }
 

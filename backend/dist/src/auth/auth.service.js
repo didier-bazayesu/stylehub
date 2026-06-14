@@ -51,16 +51,20 @@ const bcrypt = __importStar(require("bcrypt"));
 const crypto = __importStar(require("crypto"));
 const resend_1 = require("resend");
 const prisma_service_1 = require("../prisma/prisma.service");
+const notifications_service_1 = require("../notifications/notifications.service");
+const client_1 = require("@prisma/client");
 let AuthService = AuthService_1 = class AuthService {
     prisma;
     jwtService;
     configService;
+    notificationsService;
     logger = new common_1.Logger(AuthService_1.name);
     resend;
-    constructor(prisma, jwtService, configService) {
+    constructor(prisma, jwtService, configService, notificationsService) {
         this.prisma = prisma;
         this.jwtService = jwtService;
         this.configService = configService;
+        this.notificationsService = notificationsService;
         this.resend = new resend_1.Resend(this.configService.get('RESEND_API_KEY'));
     }
     async register(dto) {
@@ -86,6 +90,12 @@ let AuthService = AuthService_1 = class AuthService {
             },
         });
         await this.sendVerificationEmail(user.email, emailVerificationToken);
+        await this.notificationsService.notifyAdmins({
+            type: client_1.NotificationType.SYSTEM,
+            title: 'New user registered',
+            message: `${user.first_name} ${user.last_name} (${user.email}) just created an account.`,
+            data: { user_id: user.id },
+        });
         return {
             id: user.id,
             email: user.email,
@@ -372,6 +382,7 @@ exports.AuthService = AuthService = AuthService_1 = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
         jwt_1.JwtService,
-        config_1.ConfigService])
+        config_1.ConfigService,
+        notifications_service_1.NotificationsService])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map
