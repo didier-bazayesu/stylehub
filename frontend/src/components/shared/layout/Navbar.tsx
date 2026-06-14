@@ -122,6 +122,7 @@ export function Navbar() {
               <Heart className="h-5 w-5" />
             </Link>
           )}
+          {!isAuthenticated && <ThemeToggle/>}
           {isAuthenticated && (
             <Link to={ROUTES.CUSTOMER.NOTIFICATIONS}>
               <Bell className="h-5 w-5" />

@@ -4,6 +4,7 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query'
+import { AxiosError } from 'axios'
 import { toast } from 'sonner'
 import { apiClient } from '@/api/client'
 import { QUERY_KEYS, STALE_TIME } from '@/config/constants'
@@ -13,13 +14,15 @@ import type {
   CreateProductPayload,
   CreateVariantPayload,
   CursorPaginationMeta,
+  PaginationMeta,
   Product,
   ProductFilters,
   ProductStatus,
   ProductVariant,
+  VendorProduct,
 } from '@/types'
 
-// ─── List products ────────────────────────────────────────────────────────────
+// ─── List products (public) ───────────────────────────────────────────────────
 
 export function useProducts(filters: ProductFilters = {}) {
   return useQuery({
@@ -32,6 +35,24 @@ export function useProducts(filters: ProductFilters = {}) {
       return data
     },
     staleTime: STALE_TIME.MEDIUM,
+  })
+}
+
+// ─── List vendor's own products (all statuses — for vendor dashboard) ─────────
+// Calls GET /products/manage which is authenticated and returns DRAFT,
+// ACTIVE, and ARCHIVED products with the status field always present.
+
+export function useVendorProducts(filters: Omit<ProductFilters, 'vendor'> = {}) {
+  return useQuery({
+    queryKey: ['products', 'manage', filters],
+    queryFn: async () => {
+      const qs = buildQueryString(filters as Record<string, string | number | undefined | null>)
+      const { data } = await apiClient.get<
+        ApiResponse<VendorProduct[]> & { meta: PaginationMeta }
+      >(`/products/manage${qs}`)
+      return data
+    },
+    staleTime: STALE_TIME.SHORT,
   })
 }
 
@@ -64,6 +85,18 @@ export function useProduct(slug: string) {
     queryKey: QUERY_KEYS.product(slug),
     queryFn: async () => {
       const { data } = await apiClient.get<ApiResponse<Product>>(`/products/${slug}`)
+      return data.data
+    },
+    staleTime: STALE_TIME.MEDIUM,
+    enabled: Boolean(slug),
+  })
+}
+
+export function useVendorProduct(slug: string) {
+  return useQuery({
+    queryKey: ['products', 'manage', slug],
+    queryFn: async () => {
+      const { data } = await apiClient.get<ApiResponse<Product>>(`/products/manage/${slug}`)
       return data.data
     },
     staleTime: STALE_TIME.MEDIUM,
@@ -233,6 +266,50 @@ export function useAdminDeleteProduct() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['products'] })
       toast.success('Product deleted.')
+    },
+  })
+}
+
+//ADDEDE HOOKS --------------------------------//
+
+// ─── Vendor: Delete variant ───────────────────────────────────────────────────
+export function useDeleteVariant(productId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ variantId }: { variantId: string }) => {
+      await apiClient.delete(`/products/${productId}/variants/${variantId}`)
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['products'] })
+      if (productId) {
+        qc.invalidateQueries({ queryKey: QUERY_KEYS.product(productId) })
+      }
+      toast.success('Variant deleted successfully.')
+    },
+    onError: (error: unknown) => {
+      const axiosError = error instanceof AxiosError ? error : null
+      toast.error(axiosError?.response?.data?.message || 'Failed to delete variant.')
+    },
+  })
+}
+
+// ─── Vendor: Delete product image ─────────────────────────────────────────────
+export function useDeleteProductImage(productId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ imageId }: { imageId: string }) => {
+      await apiClient.delete(`/products/${productId}/images/${imageId}`)
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['products'] })
+      if (productId) {
+        qc.invalidateQueries({ queryKey: QUERY_KEYS.product(productId) })
+      }
+      toast.success('Image deleted successfully.')
+    },
+    onError: (error: unknown) => {
+      const axiosError = error instanceof AxiosError ? error : null
+      toast.error(axiosError?.response?.data?.message || 'Failed to delete image.')
     },
   })
 }

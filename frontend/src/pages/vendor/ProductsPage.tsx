@@ -1,17 +1,15 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Plus, Pencil, Trash2, Eye, EyeOff, Search } from 'lucide-react'
-import { useProducts } from '@/api/hooks/useProducts'
+import { useVendorProducts } from '@/api/hooks/useProducts'
 import { useDeleteProduct, useUpdateProductStatus } from '@/api/hooks/useProducts'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Input } from '@/components/ui/Input'
 import { TableRowSkeleton } from '@/components/ui/Loading'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { useAuthStore } from '@/store'
 import {
   formatCurrency,
-  getProductPrimaryImage,
   PRODUCT_STATUS_LABELS,
   truncate,
 } from '@/lib/utils'
@@ -19,20 +17,22 @@ import { useDebounce } from '@/hooks'
 import { ProductStatus } from '@/types'
 import { ROUTES } from '@/config/constants'
 
+// Badge colour per status
 const STATUS_BADGE: Record<ProductStatus, 'default' | 'success' | 'warning'> = {
   [ProductStatus.DRAFT]: 'warning',
   [ProductStatus.ACTIVE]: 'success',
   [ProductStatus.ARCHIVED]: 'default',
 }
 
+const PLACEHOLDER = '/placeholder-product.png'
+
 export default function VendorProductsPage() {
-  const { user } = useAuthStore()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<ProductStatus | undefined>()
   const debouncedSearch = useDebounce(search, 400)
 
-  const { data, isLoading } = useProducts({
-    vendor: user?.vendor?.store?.slug,
+  // ✅ Uses GET /products/manage — returns ALL statuses with status field present
+  const { data, isLoading } = useVendorProducts({
     search: debouncedSearch || undefined,
     status: statusFilter,
   })
@@ -52,7 +52,7 @@ export default function VendorProductsPage() {
         </Button>
       </div>
 
-      {/* Filters */}
+      {/* Status filter tabs */}
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <div className="relative w-64">
           <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
@@ -105,19 +105,31 @@ export default function VendorProductsPage() {
               </tr>
             ) : (
               products.map((product) => {
-                const image = getProductPrimaryImage(product.images ?? [])
+                // product.image is a single pre-resolved URL string from the API
+                const imageSrc = product.image ?? PLACEHOLDER
+
+                // Determine which status the toggle button should switch TO
+                const nextStatus =
+                  product.status === ProductStatus.ACTIVE
+                    ? ProductStatus.ARCHIVED
+                    : ProductStatus.ACTIVE
+
                 return (
                   <tr
                     key={product.id}
                     className="hover:bg-gray-50 dark:hover:bg-gray-800/50"
                   >
+                    {/* Product info */}
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-gray-100">
                           <img
-                            src={image}
-                            alt=""
+                            src={imageSrc}
+                            alt={product.name}
                             className="h-full w-full object-cover"
+                            onError={(e) => {
+                              ;(e.currentTarget as HTMLImageElement).src = PLACEHOLDER
+                            }}
                           />
                         </div>
                         <div>
@@ -130,38 +142,42 @@ export default function VendorProductsPage() {
                         </div>
                       </div>
                     </td>
+
+                    {/* Status badge — always defined because VendorProduct.status is required */}
                     <td className="px-4 py-3">
                       <Badge variant={STATUS_BADGE[product.status]}>
                         {PRODUCT_STATUS_LABELS[product.status]}
                       </Badge>
                     </td>
+
+                    {/* Price */}
                     <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
                       {formatCurrency(product.base_price)}
                     </td>
+
+                    {/* Stock */}
                     <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
                       {product.total_stock}
                     </td>
+
+                    {/* Reviews */}
                     <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
                       {product.review_count}
                     </td>
+
+                    {/* Actions */}
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1">
-                        {/* Toggle active/draft */}
+                        {/* Toggle ACTIVE ↔ ARCHIVED */}
                         <button
                           onClick={() =>
-                            updateStatus({
-                              id: product.id,
-                              status:
-                                product.status === ProductStatus.ACTIVE
-                                  ? ProductStatus.DRAFT
-                                  : ProductStatus.ACTIVE,
-                            })
+                            updateStatus({ id: product.id, status: nextStatus })
                           }
                           className="flex h-7 w-7 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-700"
                           title={
                             product.status === ProductStatus.ACTIVE
-                              ? "Deactivate"
-                              : "Activate"
+                              ? 'Archive product'
+                              : 'Activate product'
                           }
                         >
                           {product.status === ProductStatus.ACTIVE ? (
@@ -171,26 +187,30 @@ export default function VendorProductsPage() {
                           )}
                         </button>
 
+                        {/* Edit */}
                         <Link
                           to={ROUTES.VENDOR.PRODUCT_EDIT(product.slug)}
                           className="flex h-7 w-7 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-700"
+                          title="Edit product"
                         >
                           <Pencil className="h-3.5 w-3.5" />
                         </Link>
 
+                        {/* Delete (soft-delete) */}
                         <button
                           onClick={() => {
-                            if (confirm("Delete this product?"))
-                              deleteProduct(product.id);
+                            if (confirm('Delete this product? This cannot be undone.'))
+                              deleteProduct(product.id)
                           }}
                           className="flex h-7 w-7 items-center justify-center rounded text-gray-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950"
+                          title="Delete product"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     </td>
                   </tr>
-                );
+                )
               })
             )}
           </tbody>
