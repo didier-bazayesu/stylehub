@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { Plus, Upload, ArrowLeft } from 'lucide-react'
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Plus, Upload, ArrowLeft } from "lucide-react";
 import { useUpdateProductStatus } from "@/api/hooks/useProducts";
 import {
   useCreateProduct,
@@ -11,106 +11,124 @@ import {
   useProduct,
   useAddVariant,
   useUploadProductImages,
-} from '@/api/hooks/useProducts'
-import { useCategories } from '@/api/hooks'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-import { Badge } from '@/components/ui/Badge'
-import { PageLoader } from '@/components/ui/Loading'
-import { useFileUpload } from '@/hooks'
-import { ROUTES } from '@/config/constants'
-import { ProductStatus } from '@/types'
+} from "@/api/hooks/useProducts";
+import { useCategories } from "@/api/hooks";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Badge } from "@/components/ui/Badge";
+import { PageLoader } from "@/components/ui/Loading";
+import { useFileUpload } from "@/hooks";
+import { ROUTES } from "@/config/constants";
+import { ProductStatus } from "@/types";
 
 // ─── Schemas ──────────────────────────────────────────────────────────────────
 
 const detailsSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  category_id: z.string().min(1, 'Select a category'),
-  description: z.string().min(20, 'Write at least 20 characters'),
-  base_price: z.coerce.number().min(0.01, 'Price must be greater than 0'),
-})
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  category_id: z.string().min(1, "Select a category"),
+  description: z.string().min(20, "Write at least 20 characters"),
+  base_price: z.coerce.number().min(0.01, "Price must be greater than 0"),
+});
 
 const variantSchema = z.object({
-  sku: z.string().min(1, 'SKU is required'),
+  sku: z.string().min(1, "SKU is required"),
   size: z.string().optional(),
   color: z.string().optional(),
   price: z.coerce.number().min(0.01),
   stock: z.coerce.number().int().min(0),
-})
+});
 
-type DetailsValues = z.infer<typeof detailsSchema>
-type VariantValues = z.infer<typeof variantSchema>
+type DetailsValues = z.infer<typeof detailsSchema>;
+type VariantValues = z.infer<typeof variantSchema>;
 
 // ─── Steps ────────────────────────────────────────────────────────────────────
 
-const STEPS = ['Details', 'Variants', 'Images', 'Publish'] as const
-type Step = (typeof STEPS)[number]
+const STEPS = ["Details", "Variants", "Images", "Publish"] as const;
+type Step = (typeof STEPS)[number];
 
 export default function ProductFormPage() {
-  const { id } = useParams<{ id: string }>()
-  const isEditing = Boolean(id)
-  const navigate = useNavigate()
+  const { id: slugOrId } = useParams<{ id: string }>();
+  const isEditing = Boolean(slugOrId);
+  const navigate = useNavigate();
 
-  const [step, setStep] = useState<Step>('Details')
-  const [productId, setProductId] = useState<string | null>(id ?? null)
+  const [step, setStep] = useState<Step>("Details");
+  const [productId, setProductId] = useState<string | null>(null);
   const [hasVariants, setHasVariants] = useState(false);
 
-  // Fetch existing product for editing
-  // const { data: existingProduct, isLoading: loadingProduct } = useProduct(
-  //   productId ? `${productId}` : '',
-  // )
- const { data: existingProduct, isLoading: loadingProduct } = useProduct(
-   isEditing ? id! : "",
- );
+  // Fetch by slug — slugOrId is the slug when editing
+  const { data: existingProduct, isLoading: loadingProduct } = useProduct(
+    isEditing ? slugOrId! : "",
+  );
 
-  const { data: categories } = useCategories()
-  const { mutate: createProduct, isPending: creating } = useCreateProduct()
-  const { mutate: updateProduct, isPending: updating } = useUpdateProduct(productId ?? '')
-  const { mutate: addVariant, isPending: addingVariant } = useAddVariant(productId ?? '')
-  const { mutate: uploadImages, isPending: uploadingImages } = useUploadProductImages(productId ?? '')
+  // Once product loads, capture the real DB id for mutations
+  useEffect(() => {
+    if (existingProduct) {
+      setProductId(existingProduct.id);
+    }
+  }, [existingProduct]);
 
-  const { files, previews, onInputChange, onDrop, clear: clearFiles, openPicker,inputRef } = useFileUpload({
+  const { data: categories } = useCategories();
+  const { mutate: createProduct, isPending: creating } = useCreateProduct();
+  const { mutate: updateProduct, isPending: updating } = useUpdateProduct(
+    productId ?? "",
+  );
+  const { mutate: addVariant, isPending: addingVariant } = useAddVariant(
+    productId ?? "",
+  );
+  const { mutate: uploadImages, isPending: uploadingImages } =
+    useUploadProductImages(productId ?? "");
+
+  const {
+    files,
+    previews,
+    onInputChange,
+    onDrop,
+    clear: clearFiles,
+    openPicker,
+    inputRef,
+  } = useFileUpload({
     multiple: true,
     maxSizeBytes: 5 * 1024 * 1024,
-  })
-  const { mutate: updateStatus} =
-    useUpdateProductStatus();
+  });
+  const { mutate: updateStatus } = useUpdateProductStatus();
 
-  const detailsForm = useForm<DetailsValues>({ resolver: zodResolver(detailsSchema) })
-  const variantForm = useForm<VariantValues>({ resolver: zodResolver(variantSchema) })
+  const detailsForm = useForm<DetailsValues>({
+    resolver: zodResolver(detailsSchema),
+  });
+  const variantForm = useForm<VariantValues>({
+    resolver: zodResolver(variantSchema),
+  });
 
+  // Pre-fill form with existing product data
   useEffect(() => {
     if (existingProduct && isEditing) {
       detailsForm.reset({
         name: existingProduct.name,
-        category_id: existingProduct.category_id,
+        category_id: existingProduct.category?.id ?? "",
         description: existingProduct.description,
-        base_price: existingProduct.base_price,
-      })
+        base_price: Number(existingProduct.base_price),
+      });
+      setHasVariants((existingProduct.variants?.length ?? 0) > 0);
     }
-  }, [existingProduct, isEditing,detailsForm])
+  }, [existingProduct, isEditing, detailsForm]);
 
-  if (loadingProduct && isEditing) return <PageLoader />
+  if (loadingProduct && isEditing) return <PageLoader />;
 
-  const currentStepIndex = STEPS.indexOf(step)
+  const currentStepIndex = STEPS.indexOf(step);
 
   const handleDetailsSubmit = (values: DetailsValues) => {
     if (productId) {
-      updateProduct(values, { onSuccess: () => setStep('Variants') })
+      updateProduct(values, { onSuccess: () => setStep("Variants") });
     } else {
       createProduct(values, {
         onSuccess: (product) => {
-          setProductId(product.id)
-          setStep('Variants')
+          setProductId(product.id);
+          setStep("Variants");
         },
-      })
+      });
     }
-  }
+  };
 
-  // const handleAddVariant = (values: VariantValues) => {
-  //   if (!productId) return
-  //   addVariant(values, { onSuccess: () => variantForm.reset() })
-  // }
   const handleAddVariant = (values: VariantValues) => {
     if (!productId) return;
 
@@ -123,27 +141,31 @@ export default function ProductFormPage() {
   };
 
   const handleUploadImages = () => {
-    if (!productId || !files.length) return
-    uploadImages(files, { onSuccess: () => { clearFiles(); setStep('Publish') } })
-  }
-
-const handlePublish = () => {
-  if (!productId) return;
-
-  updateStatus(
-    {
-      id: productId,
-      status: ProductStatus.ACTIVE,
-    },
-    {
+    if (!productId || !files.length) return;
+    uploadImages(files, {
       onSuccess: () => {
-        navigate(ROUTES.VENDOR.PRODUCTS);
+        clearFiles();
+        setStep("Publish");
       },
-    },
-  );
-};
+    });
+  };
 
-  
+  const handlePublish = () => {
+    if (!productId) return;
+
+    updateStatus(
+      {
+        id: productId,
+        status: ProductStatus.ACTIVE,
+      },
+      {
+        onSuccess: () => {
+          navigate(ROUTES.VENDOR.PRODUCTS);
+        },
+      },
+    );
+  };
+
   return (
     <div className="mx-auto max-w-2xl p-6">
       {/* Header */}
@@ -351,9 +373,6 @@ const handlePublish = () => {
             <Button variant="ghost" onClick={() => setStep("Details")}>
               Back
             </Button>
-            {/* <Button onClick={() => setStep('Images')} disabled={!existingProduct?.variants?.length}>
-              Continue
-            </Button> */}
             <Button
               onClick={() => setStep("Images")}
               disabled={!hasVariants && !existingProduct?.variants?.length}
@@ -389,7 +408,6 @@ const handlePublish = () => {
               multiple
               className="hidden"
               onChange={onInputChange}
-
             />
           </div>
 

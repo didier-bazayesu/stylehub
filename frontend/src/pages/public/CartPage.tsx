@@ -7,7 +7,8 @@ import { PageLoader } from "@/components/ui/Loading";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { formatCurrency } from "@/lib/utils";
 import { ROUTES } from "@/config/constants";
-import { useAuthStore, useCartStore } from "@/store";
+import { useAuthStore } from "@/store";
+import { useGuestCart } from "@/api/hooks";
 
 export default function CartPage() {
   const navigate = useNavigate();
@@ -17,15 +18,19 @@ export default function CartPage() {
   const { mutate: removeItem } = useRemoveFromCart();
 
   // Guest cart from localStorage
-  const {
-    cart: guestCart,
-    optimisticRemoveItem,
-    optimisticUpdateItem,
-  } = useCartStore();
-  const guestItems =
-    !isAuthenticated && guestCart?.id === "guest"
-      ? (guestCart.items ?? [])
-      : [];
+  const rawGuestItems = useGuestCart();
+
+  // Shape guest items to match CartItem so the render code works unchanged
+  const guestItems = rawGuestItems.map((g) => ({
+    id: g.variant_id, // stable key
+    cart_id: "guest",
+    variant_id: g.variant_id,
+    product_id: g.product_id,
+    quantity: g.quantity,
+    added_at: g.added_at,
+    product: g.product,
+    variant: g.variant,
+  }));
 
   // Show loader only for authenticated users fetching server cart
   if (isAuthenticated && isLoading) return <PageLoader />;
@@ -54,19 +59,12 @@ export default function CartPage() {
   }
 
   const handleUpdateItem = (variantId: string, quantity: number) => {
-    if (!isAuthenticated) {
-      optimisticUpdateItem(variantId, quantity);
-    } else {
-      updateItem({ variantId, quantity });
-    }
+    if (quantity < 1) return;
+    updateItem({ variantId, quantity }); // works for both — hook checks isAuthenticated internally
   };
 
   const handleRemoveItem = (variantId: string) => {
-    if (!isAuthenticated) {
-      optimisticRemoveItem(variantId);
-    } else {
-      removeItem(variantId);
-    }
+    removeItem(variantId); // works for both
   };
 
   const handleCheckout = () => {

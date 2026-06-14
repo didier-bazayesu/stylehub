@@ -107,17 +107,26 @@ export default function VendorProductsPage() {
               products.map((product) => {
                 const image = getProductPrimaryImage(product.images ?? [])
                 return (
-                  <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                  <tr
+                    key={product.id}
+                    className="hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                  >
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-gray-100">
-                          <img src={image} alt="" className="h-full w-full object-cover" />
+                          <img
+                            src={image}
+                            alt=""
+                            className="h-full w-full object-cover"
+                          />
                         </div>
                         <div>
                           <p className="font-medium text-gray-900 dark:text-gray-100">
                             {truncate(product.name, 40)}
                           </p>
-                          <p className="text-xs text-gray-400">{product.category?.name}</p>
+                          <p className="text-xs text-gray-400">
+                            {product.category?.name}
+                          </p>
                         </div>
                       </div>
                     </td>
@@ -149,7 +158,11 @@ export default function VendorProductsPage() {
                             })
                           }
                           className="flex h-7 w-7 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-700"
-                          title={product.status === ProductStatus.ACTIVE ? 'Deactivate' : 'Activate'}
+                          title={
+                            product.status === ProductStatus.ACTIVE
+                              ? "Deactivate"
+                              : "Activate"
+                          }
                         >
                           {product.status === ProductStatus.ACTIVE ? (
                             <EyeOff className="h-3.5 w-3.5" />
@@ -159,7 +172,7 @@ export default function VendorProductsPage() {
                         </button>
 
                         <Link
-                          to={ROUTES.VENDOR.PRODUCT_EDIT(product.id)}
+                          to={ROUTES.VENDOR.PRODUCT_EDIT(product.slug)}
                           className="flex h-7 w-7 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-700"
                         >
                           <Pencil className="h-3.5 w-3.5" />
@@ -167,7 +180,8 @@ export default function VendorProductsPage() {
 
                         <button
                           onClick={() => {
-                            if (confirm('Delete this product?')) deleteProduct(product.id)
+                            if (confirm("Delete this product?"))
+                              deleteProduct(product.id);
                           }}
                           className="flex h-7 w-7 items-center justify-center rounded text-gray-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950"
                         >
@@ -176,7 +190,7 @@ export default function VendorProductsPage() {
                       </div>
                     </td>
                   </tr>
-                )
+                );
               })
             )}
           </tbody>

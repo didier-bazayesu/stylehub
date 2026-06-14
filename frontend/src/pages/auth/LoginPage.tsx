@@ -1,17 +1,14 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useLogin } from "@/api/hooks/useAuth";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { ROUTES } from "@/config/constants";
 import { AuthBrandPanel } from "@/components/shared/layout/AuthBrandPanel";
-import { useAuthStore, useCartStore } from "@/store";
-import { toast } from "sonner";
-import { apiClient } from "@/api/client";
 
 const schema = z.object({
   email: z.string().email("Enter a valid email address"),
@@ -23,10 +20,6 @@ type FormValues = z.infer<typeof schema>;
 export default function LoginPage() {
   const { mutate: login, isPending } = useLogin();
   const [showPassword, setShowPassword] = useState(false);
-  const { isAuthenticated } = useAuthStore();
-  const { cart, clearCart } = useCartStore();
-  const location = useLocation();
-  const navigate = useNavigate();
 
   const {
     register,
@@ -34,46 +27,14 @@ export default function LoginPage() {
     formState: { errors },
   } = useForm<FormValues>({ resolver: zodResolver(schema) });
 
-  const from = (location.state?.from as string) ?? ROUTES.HOME;
-
-  // Guest items are in the persisted cart with id='guest'
-  const guestItems = cart?.id === "guest" ? [...(cart.items ?? [])] : [];
-
-  useEffect(() => {
-    if (!isAuthenticated) return;
-
-    const mergeAndNavigate = async () => {
-      if (guestItems.length > 0) {
-        // Merge guest items to server cart one by one
-        for (const item of guestItems) {
-          try {
-            await apiClient.post("/cart/items", {
-              variant_id: item.variant_id, // ← was item.variant.id (WRONG)
-              quantity: item.quantity,
-            });
-          } catch {
-            // ignore individual failures, continue
-          }
-        }
-        clearCart();
-        toast.success(
-          `${guestItems.length} item${guestItems.length > 1 ? "s" : ""} moved to your cart.`,
-        );
-      }
-      navigate(from, { replace: true });
-    };
-
-    mergeAndNavigate();
-  }, [isAuthenticated]);
-
   const handleLogin = (values: FormValues) => {
     login(values);
   };
 
   return (
-    <div className="md:flex  md:min-h-screen">
+    <div className="md:flex md:min-h-screen">
       <AuthBrandPanel />
-      <div className=" md:w-1/2 flex max-md:min-h-screen items-center justify-center bg-gray-50 px-4 dark:bg-gray-950">
+      <div className="md:w-1/2 flex max-md:min-h-screen items-center justify-center bg-gray-50 px-4 dark:bg-gray-950">
         <div className="w-full max-w-sm">
           {/* Logo */}
           <Link

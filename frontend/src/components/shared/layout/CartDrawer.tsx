@@ -1,40 +1,49 @@
-import { Link, useNavigate } from "react-router-dom";
-import { X, Minus, Plus, Trash2, ShoppingBag } from "lucide-react";
-import { useCartStore, useAuthStore } from "@/store";
-import {
-  useCart,
-  useUpdateCartItem,
-  useRemoveFromCart,
-} from "@/api/hooks/useCart";
-import { Button } from "@/components/ui/Button";
-import { formatCurrency } from "@/lib/utils";
-import { ROUTES } from "@/config/constants";
+import { Link, useNavigate } from "react-router-dom"
+import { X, Minus, Plus, Trash2, ShoppingBag } from "lucide-react"
+import { useCartStore, useAuthStore } from "@/store"
+import { useGuestCart } from "@/api/hooks"
+import { useCart, useUpdateCartItem, useRemoveFromCart } from "@/api/hooks/useCart"
+import { Button } from "@/components/ui/Button"
+import { formatCurrency } from "@/lib/utils"
+import { ROUTES } from "@/config/constants"
 
 export function CartDrawer() {
-  const { isOpen, closeCart, cart: guestCart } = useCartStore();
-  const { isAuthenticated } = useAuthStore();
-  const { data: backendCart, isLoading } = useCart();
-  const { mutate: updateItem } = useUpdateCartItem();
-  const { mutate: removeItem } = useRemoveFromCart();
-  const navigate = useNavigate();
+  const { isOpen, closeCart } = useCartStore()  // UI state only
+  const { isAuthenticated } = useAuthStore()
+  const { data: serverCart, isLoading } = useCart()
+  const guestItems = useGuestCart()
+  const { mutate: updateItem } = useUpdateCartItem()
+  const { mutate: removeItem } = useRemoveFromCart()
+  const navigate = useNavigate()
 
-  // Use guest cart if not authenticated, backend cart if authenticated
-  const cart = isAuthenticated ? backendCart : guestCart;
-  const items = cart?.items ?? [];
-  const subtotal = items.reduce((s, i) => s + i.variant.price * i.quantity, 0);
-  const shipping = subtotal > 100 ? 0 : 9.99;
-  const total = subtotal + shipping;
+  // Authenticated → server cart. Guest → localStorage cart shaped to match
+  const items = isAuthenticated
+    ? (serverCart?.items ?? [])
+    : guestItems.map((g) => ({
+        id: g.variant_id,
+        cart_id: "guest",
+        variant_id: g.variant_id,
+        product_id: g.product_id,
+        quantity: g.quantity,
+        added_at: g.added_at,
+        product: g.product,
+        variant: g.variant,
+      }))
 
-  if (!isOpen) return null;
+  const subtotal = items.reduce((s, i) => s + i.variant.price * i.quantity, 0)
+  const shipping = subtotal > 100 ? 0 : 9.99
+  const total = subtotal + shipping
+
+  if (!isOpen) return null
 
   const handleCheckout = () => {
-    closeCart();
+    closeCart()
     if (!isAuthenticated) {
-      navigate(ROUTES.LOGIN, { state: { from: ROUTES.CHECKOUT } });
-      return;
+      navigate(ROUTES.LOGIN, { state: { from: ROUTES.CHECKOUT } })
+      return
     }
-    navigate(ROUTES.CHECKOUT);
-  };
+    navigate(ROUTES.CHECKOUT)
+  }
 
   return (
     <>
@@ -46,6 +55,7 @@ export function CartDrawer() {
 
       {/* Drawer */}
       <div className="fixed right-0 top-0 z-50 flex h-full w-full max-w-sm flex-col bg-white shadow-2xl dark:bg-gray-950">
+
         {/* Header */}
         <div className="flex items-center justify-between border-b border-gray-100 px-4 py-4 dark:border-gray-800">
           <h2 className="text-base font-semibold text-gray-900 dark:text-white">
@@ -88,7 +98,7 @@ export function CartDrawer() {
               {items.map((item) => {
                 const primaryImage =
                   item.product.images?.find((i) => i.is_primary)?.url ??
-                  item.product.images?.[0]?.url;
+                  item.product.images?.[0]?.url
 
                 return (
                   <div
@@ -164,9 +174,11 @@ export function CartDrawer() {
                         </div>
 
                         <button
-                          onClick={() => {
-                            removeItem(item.variant.id);
-                          }}
+                          onClick={() =>
+                            removeItem(
+                              item.variant_id ?? item.variant?.id ?? "",
+                            )
+                          }
                           className="ml-auto flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950"
                         >
                           <Trash2 className="h-3 w-3" />
@@ -180,7 +192,7 @@ export function CartDrawer() {
           )}
         </div>
 
-        {/* Footer — show for all users with items */}
+        {/* Footer */}
         {items.length > 0 && (
           <div className="border-t border-gray-100 px-4 py-4 dark:border-gray-800">
             <div className="mb-3 flex flex-col gap-1.5 text-sm">
@@ -190,9 +202,7 @@ export function CartDrawer() {
               </div>
               <div className="flex justify-between text-gray-500 dark:text-gray-400">
                 <span>Shipping</span>
-                <span>
-                  {shipping === 0 ? "Free" : formatCurrency(shipping)}
-                </span>
+                <span>{shipping === 0 ? "Free" : formatCurrency(shipping)}</span>
               </div>
               <div className="flex justify-between border-t border-gray-100 pt-2 font-semibold text-gray-900 dark:border-gray-800 dark:text-white">
                 <span>Total</span>
@@ -220,5 +230,5 @@ export function CartDrawer() {
         )}
       </div>
     </>
-  );
+  )
 }
