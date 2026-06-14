@@ -188,15 +188,25 @@ let CartService = class CartService {
             const lineTotal = Number(item.variant.price) * item.quantity;
             return {
                 id: item.id,
+                cart_id: cart.id,
+                variant_id: item.variant_id,
+                product_id: item.product_id,
                 quantity: item.quantity,
                 added_at: item.added_at,
                 line_total: lineTotal,
-                variant: item.variant,
+                variant: {
+                    id: item.variant.id,
+                    sku: item.variant.sku,
+                    size: item.variant.size,
+                    color: item.variant.color,
+                    price: Number(item.variant.price),
+                    stock: item.variant.stock,
+                },
                 product: {
                     id: item.product.id,
                     name: item.product.name,
                     slug: item.product.slug,
-                    image: item.product.images[0]?.url ?? null,
+                    images: item.product.images,
                 },
             };
         });
@@ -204,6 +214,7 @@ let CartService = class CartService {
         const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
         return {
             id: cart.id,
+            user_id: cart.user_id,
             items,
             subtotal,
             item_count: itemCount,

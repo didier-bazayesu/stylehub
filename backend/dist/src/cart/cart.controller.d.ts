@@ -5,8 +5,12 @@ export declare class CartController {
     constructor(cartService: CartService);
     getCart(userId: string): Promise<{
         id: string;
+        user_id: string;
         items: {
             id: string;
+            cart_id: string;
+            variant_id: string;
+            product_id: string;
             quantity: number;
             added_at: Date;
             line_total: number;
@@ -15,14 +19,17 @@ export declare class CartController {
                 sku: string;
                 size: string | null;
                 color: string | null;
-                price: import("@prisma/client-runtime-utils").Decimal;
+                price: number;
                 stock: number;
             };
             product: {
                 id: string;
                 name: string;
                 slug: string;
-                image: string;
+                images: {
+                    url: string;
+                    is_primary: boolean;
+                }[];
             };
         }[];
         subtotal: number;
@@ -31,8 +38,12 @@ export declare class CartController {
     }>;
     addItem(userId: string, dto: AddCartItemDto): Promise<{
         id: string;
+        user_id: string;
         items: {
             id: string;
+            cart_id: string;
+            variant_id: string;
+            product_id: string;
             quantity: number;
             added_at: Date;
             line_total: number;
@@ -41,14 +52,17 @@ export declare class CartController {
                 sku: string;
                 size: string | null;
                 color: string | null;
-                price: import("@prisma/client-runtime-utils").Decimal;
+                price: number;
                 stock: number;
             };
             product: {
                 id: string;
                 name: string;
                 slug: string;
-                image: string;
+                images: {
+                    url: string;
+                    is_primary: boolean;
+                }[];
             };
         }[];
         subtotal: number;
@@ -57,8 +71,12 @@ export declare class CartController {
     }>;
     updateItem(userId: string, variantId: string, dto: UpdateCartItemDto): Promise<{
         id: string;
+        user_id: string;
         items: {
             id: string;
+            cart_id: string;
+            variant_id: string;
+            product_id: string;
             quantity: number;
             added_at: Date;
             line_total: number;
@@ -67,14 +85,17 @@ export declare class CartController {
                 sku: string;
                 size: string | null;
                 color: string | null;
-                price: import("@prisma/client-runtime-utils").Decimal;
+                price: number;
                 stock: number;
             };
             product: {
                 id: string;
                 name: string;
                 slug: string;
-                image: string;
+                images: {
+                    url: string;
+                    is_primary: boolean;
+                }[];
             };
         }[];
         subtotal: number;
@@ -83,8 +104,12 @@ export declare class CartController {
     }>;
     removeItem(userId: string, variantId: string): Promise<{
         id: string;
+        user_id: string;
         items: {
             id: string;
+            cart_id: string;
+            variant_id: string;
+            product_id: string;
             quantity: number;
             added_at: Date;
             line_total: number;
@@ -93,14 +118,17 @@ export declare class CartController {
                 sku: string;
                 size: string | null;
                 color: string | null;
-                price: import("@prisma/client-runtime-utils").Decimal;
+                price: number;
                 stock: number;
             };
             product: {
                 id: string;
                 name: string;
                 slug: string;
-                image: string;
+                images: {
+                    url: string;
+                    is_primary: boolean;
+                }[];
             };
         }[];
         subtotal: number;

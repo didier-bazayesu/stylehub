@@ -6,8 +6,12 @@ export declare class CartService {
     constructor(prisma: PrismaService);
     getCart(userId: string): Promise<{
         id: string;
+        user_id: string;
         items: {
             id: string;
+            cart_id: string;
+            variant_id: string;
+            product_id: string;
             quantity: number;
             added_at: Date;
             line_total: number;
@@ -16,14 +20,17 @@ export declare class CartService {
                 sku: string;
                 size: string | null;
                 color: string | null;
-                price: Prisma.Decimal;
+                price: number;
                 stock: number;
             };
             product: {
                 id: string;
                 name: string;
                 slug: string;
-                image: string;
+                images: {
+                    url: string;
+                    is_primary: boolean;
+                }[];
             };
         }[];
         subtotal: number;
@@ -32,8 +39,12 @@ export declare class CartService {
     }>;
     addItem(userId: string, dto: AddCartItemDto): Promise<{
         id: string;
+        user_id: string;
         items: {
             id: string;
+            cart_id: string;
+            variant_id: string;
+            product_id: string;
             quantity: number;
             added_at: Date;
             line_total: number;
@@ -42,14 +53,17 @@ export declare class CartService {
                 sku: string;
                 size: string | null;
                 color: string | null;
-                price: Prisma.Decimal;
+                price: number;
                 stock: number;
             };
             product: {
                 id: string;
                 name: string;
                 slug: string;
-                image: string;
+                images: {
+                    url: string;
+                    is_primary: boolean;
+                }[];
             };
         }[];
         subtotal: number;
@@ -58,8 +72,12 @@ export declare class CartService {
     }>;
     updateItem(userId: string, variantId: string, dto: UpdateCartItemDto): Promise<{
         id: string;
+        user_id: string;
         items: {
             id: string;
+            cart_id: string;
+            variant_id: string;
+            product_id: string;
             quantity: number;
             added_at: Date;
             line_total: number;
@@ -68,14 +86,17 @@ export declare class CartService {
                 sku: string;
                 size: string | null;
                 color: string | null;
-                price: Prisma.Decimal;
+                price: number;
                 stock: number;
             };
             product: {
                 id: string;
                 name: string;
                 slug: string;
-                image: string;
+                images: {
+                    url: string;
+                    is_primary: boolean;
+                }[];
             };
         }[];
         subtotal: number;
@@ -84,8 +105,12 @@ export declare class CartService {
     }>;
     removeItem(userId: string, variantId: string): Promise<{
         id: string;
+        user_id: string;
         items: {
             id: string;
+            cart_id: string;
+            variant_id: string;
+            product_id: string;
             quantity: number;
             added_at: Date;
             line_total: number;
@@ -94,14 +119,17 @@ export declare class CartService {
                 sku: string;
                 size: string | null;
                 color: string | null;
-                price: Prisma.Decimal;
+                price: number;
                 stock: number;
             };
             product: {
                 id: string;
                 name: string;
                 slug: string;
-                image: string;
+                images: {
+                    url: string;
+                    is_primary: boolean;
+                }[];
             };
         }[];
         subtotal: number;
