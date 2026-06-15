@@ -9,7 +9,6 @@ import {
   LogOut,
   LayoutDashboard,
   Store,
-  Bell,
 } from "lucide-react";
 import { useAuthStore, useCartStore, useUIStore } from "@/store";
 import { useLogout } from "@/api/hooks/useAuth";
@@ -20,6 +19,7 @@ import { getInitials } from "@/lib/utils";
 import { useState, useRef, useEffect } from "react";
 import { ThemeToggle } from "./ThemeToggle";
 import { useGuestCart } from "@/api/hooks";
+import { NotificationDropdown } from "./NotificationDropdown";
 
 export function Navbar() {
   const { user, isAuthenticated } = useAuthStore();
@@ -123,11 +123,7 @@ export function Navbar() {
             </Link>
           )}
           {!isAuthenticated && <ThemeToggle/>}
-          {isAuthenticated && (
-            <Link to={ROUTES.CUSTOMER.NOTIFICATIONS}>
-              <Bell className="h-5 w-5" />
-            </Link>
-          )}
+          {isAuthenticated && <NotificationDropdown />}
 
           {/* Cart — ALL authenticated users can shop */}
           <button

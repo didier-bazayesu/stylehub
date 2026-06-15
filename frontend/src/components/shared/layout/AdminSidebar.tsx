@@ -1,9 +1,8 @@
-import { NavLink, Link } from 'react-router-dom'
+import { NavLink } from 'react-router-dom'
 import {
   BarChart2,
   ChevronLeft,
   ClipboardList,
-  Home,
   LayoutDashboard,
   Package,
   ScrollText,
@@ -14,6 +13,7 @@ import {
 import { cn } from '@/lib/utils'
 import { ROUTES } from '@/config/constants'
 import { useUIStore } from '@/store'
+import { BackButton } from './BackButton'
 
 const navItems = [
   { to: ROUTES.ADMIN.DASHBOARD, icon: LayoutDashboard, label: 'Overview' },
@@ -84,20 +84,7 @@ export function AdminSidebar() {
       </nav>
 
       {/* Back to Store */}
-      <div className="border-t border-gray-100 px-2 py-2 dark:border-red-800">
-        <Link
-          to={ROUTES.HOME}
-          className={cn(
-            'flex items-center gap-3 rounded-lg px-2 py-2 text-sm transition-colors',
-            'text-gray-500 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100',
-            !sidebarOpen && 'justify-center',
-          )}
-          title={!sidebarOpen ? 'Back to Store' : undefined}
-        >
-          <Home className="h-4 w-4 shrink-0" />
-          {sidebarOpen && <span>Back to Store</span>}
-        </Link>
-      </div>
+      <BackButton sidebarOpen={sidebarOpen} />
     </aside>
   )
 }

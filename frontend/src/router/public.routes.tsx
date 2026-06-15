@@ -2,7 +2,7 @@ import { lazy } from "react";
 import { ROUTES } from "@/config/constants";
 import { PublicLayout } from "@/components/shared";
 
-const HomePage = lazy(() => import("@/pages/public/HomePage"));
+const HomePage = lazy(() => import("@/pages/public/Home"));
 const ProductsPage = lazy(() => import("@/pages/public/ProductsPage"));
 const ProductDetailPage = lazy(
   () => import("@/pages/public/ProductDetailPage"),

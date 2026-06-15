@@ -55,7 +55,7 @@ export default function VendorOrdersPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-100 text-left dark:border-gray-800">
-              {['Order', 'Customer', 'Date', 'Items', 'Total', 'Status', 'Action'].map((h) => (
+              {['Order', 'Customer Details', 'Date', 'Items', 'Total', 'Status', 'Action'].map((h) => (
                 <th key={h} className="px-4 py-3 text-xs font-medium text-gray-500">{h}</th>
               ))}
             </tr>
@@ -75,7 +75,7 @@ export default function VendorOrdersPage() {
               </tr>
             ) : (
               orders.map((order) => {
-                const vendorItems = order.items
+                const vendorItems = order.items || []
                 const canAdvance = vendorItems.some(
                   (i) => NEXT_STATUS[i.status as OrderStatus],
                 )
@@ -86,8 +86,22 @@ export default function VendorOrdersPage() {
                     <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">
                       #{order.id.slice(-8).toUpperCase()}
                     </td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
-                      {order.address?.full_name ?? '—'}
+                    <td className="px-4 py-3">
+                      <div className="flex flex-col">
+                        <span className="font-medium text-gray-900 dark:text-gray-100">
+                          {order.address?.full_name ?? '—'}
+                        </span>
+                        {order.address?.phone && (
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {order.address.phone}
+                          </span>
+                        )}
+                        {order.notes && (
+                          <span className="text-xs text-gray-400 dark:text-gray-500 mt-1 line-clamp-1">
+                            Note: {order.notes}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-gray-500">{formatDate(order.created_at)}</td>
                     <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
