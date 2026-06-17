@@ -70,7 +70,30 @@ let VendorsService = class VendorsService {
         };
     }
     async getMe(userId) {
-        const vendor = await this.findVendorByUserId(userId);
+        const vendor = await this.prisma.vendor.findFirst({
+            where: { user_id: userId, deleted_at: null },
+            include: {
+                store: {
+                    select: {
+                        id: true,
+                        name: true,
+                        slug: true,
+                        logo_url: true,
+                        banner_url: true,
+                        description: true,
+                        is_active: true,
+                        created_at: true,
+                        updated_at: true,
+                    },
+                },
+            },
+        });
+        if (!vendor) {
+            throw new common_1.NotFoundException({
+                code: 'VENDOR_NOT_FOUND',
+                message: 'Vendor profile not found.',
+            });
+        }
         return this.mapVendor(vendor);
     }
     async updateMe(userId, dto) {
@@ -156,6 +179,7 @@ let VendorsService = class VendorsService {
             rejection_reason: vendor.rejection_reason,
             created_at: vendor.created_at,
             updated_at: vendor.updated_at,
+            store: vendor.store ?? null,
         };
     }
 };

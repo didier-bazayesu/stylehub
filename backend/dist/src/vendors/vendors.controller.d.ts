@@ -20,6 +20,17 @@ export declare class VendorsController {
         rejection_reason: string | null;
         created_at: Date;
         updated_at: Date;
+        store: {
+            id: string;
+            name: string;
+            slug: string;
+            logo_url: string | null;
+            banner_url: string | null;
+            description: string | null;
+            is_active: boolean;
+            created_at: Date;
+            updated_at: Date;
+        } | null;
     }>;
     updateMe(userId: string, dto: UpdateVendorDto): Promise<{
         id: string;
@@ -30,6 +41,17 @@ export declare class VendorsController {
         rejection_reason: string | null;
         created_at: Date;
         updated_at: Date;
+        store: {
+            id: string;
+            name: string;
+            slug: string;
+            logo_url: string | null;
+            banner_url: string | null;
+            description: string | null;
+            is_active: boolean;
+            created_at: Date;
+            updated_at: Date;
+        } | null;
     }>;
     getStats(userId: string): Promise<{
         total_revenue: number | import("@prisma/client-runtime-utils").Decimal;

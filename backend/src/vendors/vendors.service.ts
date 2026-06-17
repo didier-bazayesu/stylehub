@@ -73,7 +73,32 @@ export class VendorsService {
   }
 
   async getMe(userId: string) {
-    const vendor = await this.findVendorByUserId(userId);
+    const vendor = await this.prisma.vendor.findFirst({
+      where: { user_id: userId, deleted_at: null },
+      include: {
+        store: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            logo_url: true,
+            banner_url: true,
+            description: true,
+            is_active: true,
+            created_at: true,
+            updated_at: true,
+          },
+        },
+      },
+    });
+
+    if (!vendor) {
+      throw new NotFoundException({
+        code: 'VENDOR_NOT_FOUND',
+        message: 'Vendor profile not found.',
+      });
+    }
+
     return this.mapVendor(vendor);
   }
 
@@ -175,6 +200,17 @@ export class VendorsService {
     rejection_reason: string | null;
     created_at: Date;
     updated_at: Date;
+    store?: {
+      id: string;
+      name: string;
+      slug: string;
+      logo_url: string | null;
+      banner_url: string | null;
+      description: string | null;
+      is_active: boolean;
+      created_at: Date;
+      updated_at: Date;
+    } | null;
   }) {
     return {
       id: vendor.id,
@@ -185,6 +221,7 @@ export class VendorsService {
       rejection_reason: vendor.rejection_reason,
       created_at: vendor.created_at,
       updated_at: vendor.updated_at,
+      store: vendor.store ?? null,
     };
   }
 }

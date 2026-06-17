@@ -111,20 +111,20 @@ export declare class ProductsService {
         avg_rating: number;
         review_count: number;
         images: {
-            url: string;
             id: string;
             product_id: string;
-            public_id: string;
             is_primary: boolean;
+            url: string;
+            public_id: string;
             display_order: number;
         }[];
         variants: {
             id: string;
             product_id: string;
+            price: Prisma.Decimal;
             sku: string;
             size: string | null;
             color: string | null;
-            price: Prisma.Decimal;
             stock: number;
         }[];
         category: {
@@ -133,12 +133,12 @@ export declare class ProductsService {
             slug: string;
         };
         vendor: {
-            id: string;
             store: {
                 name: string;
                 slug: string;
                 logo_url: string | null;
             } | null;
+            id: string;
             business_name: string;
         };
         reviews: {
@@ -167,20 +167,20 @@ export declare class ProductsService {
         avg_rating: number;
         review_count: number;
         images: {
-            url: string;
             id: string;
             product_id: string;
-            public_id: string;
             is_primary: boolean;
+            url: string;
+            public_id: string;
             display_order: number;
         }[];
         variants: {
             id: string;
             product_id: string;
+            price: Prisma.Decimal;
             sku: string;
             size: string | null;
             color: string | null;
-            price: Prisma.Decimal;
             stock: number;
         }[];
         category: {
@@ -189,12 +189,12 @@ export declare class ProductsService {
             slug: string;
         };
         vendor: {
-            id: string;
             store: {
                 name: string;
                 slug: string;
                 logo_url: string | null;
             } | null;
+            id: string;
             business_name: string;
         };
         reviews: {
@@ -278,11 +278,11 @@ export declare class ProductsService {
         message: string;
     }>;
     addImages(userId: string, productId: string, files: Express.Multer.File[]): Promise<{
-        url: string;
         id: string;
         product_id: string;
-        public_id: string;
         is_primary: boolean;
+        url: string;
+        public_id: string;
         display_order: number;
     }[]>;
     removeImage(userId: string, productId: string, imageId: string): Promise<{
@@ -291,19 +291,19 @@ export declare class ProductsService {
     addVariant(userId: string, productId: string, dto: CreateVariantDto): Promise<{
         id: string;
         product_id: string;
+        price: Prisma.Decimal;
         sku: string;
         size: string | null;
         color: string | null;
-        price: Prisma.Decimal;
         stock: number;
     }>;
     updateVariant(userId: string, productId: string, variantId: string, dto: UpdateVariantDto): Promise<{
         id: string;
         product_id: string;
+        price: Prisma.Decimal;
         sku: string;
         size: string | null;
         color: string | null;
-        price: Prisma.Decimal;
         stock: number;
     }>;
     removeVariant(userId: string, productId: string, variantId: string): Promise<{

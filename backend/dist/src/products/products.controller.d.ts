@@ -73,20 +73,20 @@ export declare class ProductsController {
         avg_rating: number;
         review_count: number;
         images: {
-            url: string;
             id: string;
             product_id: string;
-            public_id: string;
             is_primary: boolean;
+            url: string;
+            public_id: string;
             display_order: number;
         }[];
         variants: {
             id: string;
             product_id: string;
+            price: import("@prisma/client-runtime-utils").Decimal;
             sku: string;
             size: string | null;
             color: string | null;
-            price: import("@prisma/client-runtime-utils").Decimal;
             stock: number;
         }[];
         category: {
@@ -95,12 +95,12 @@ export declare class ProductsController {
             slug: string;
         };
         vendor: {
-            id: string;
             store: {
                 name: string;
                 slug: string;
                 logo_url: string | null;
             } | null;
+            id: string;
             business_name: string;
         };
         reviews: {
@@ -162,20 +162,20 @@ export declare class ProductsController {
         avg_rating: number;
         review_count: number;
         images: {
-            url: string;
             id: string;
             product_id: string;
-            public_id: string;
             is_primary: boolean;
+            url: string;
+            public_id: string;
             display_order: number;
         }[];
         variants: {
             id: string;
             product_id: string;
+            price: import("@prisma/client-runtime-utils").Decimal;
             sku: string;
             size: string | null;
             color: string | null;
-            price: import("@prisma/client-runtime-utils").Decimal;
             stock: number;
         }[];
         category: {
@@ -184,12 +184,12 @@ export declare class ProductsController {
             slug: string;
         };
         vendor: {
-            id: string;
             store: {
                 name: string;
                 slug: string;
                 logo_url: string | null;
             } | null;
+            id: string;
             business_name: string;
         };
         reviews: {
@@ -273,11 +273,11 @@ export declare class ProductsController {
         message: string;
     }>;
     addImages(userId: string, productId: string, files: Express.Multer.File[]): Promise<{
-        url: string;
         id: string;
         product_id: string;
-        public_id: string;
         is_primary: boolean;
+        url: string;
+        public_id: string;
         display_order: number;
     }[]>;
     removeImage(userId: string, productId: string, imageId: string): Promise<{
@@ -286,19 +286,19 @@ export declare class ProductsController {
     addVariant(userId: string, productId: string, dto: CreateVariantDto): Promise<{
         id: string;
         product_id: string;
+        price: import("@prisma/client-runtime-utils").Decimal;
         sku: string;
         size: string | null;
         color: string | null;
-        price: import("@prisma/client-runtime-utils").Decimal;
         stock: number;
     }>;
     updateVariant(userId: string, productId: string, variantId: string, dto: UpdateVariantDto): Promise<{
         id: string;
         product_id: string;
+        price: import("@prisma/client-runtime-utils").Decimal;
         sku: string;
         size: string | null;
         color: string | null;
-        price: import("@prisma/client-runtime-utils").Decimal;
         stock: number;
     }>;
     removeVariant(userId: string, productId: string, variantId: string): Promise<{

@@ -7,19 +7,19 @@ export declare class AdminController {
     constructor(adminService: AdminService);
     listUsers(query: AdminUsersQueryDto): Promise<{
         data: {
-            id: string;
-            email: string;
-            first_name: string;
-            last_name: string;
-            role: import("@prisma/client").$Enums.Role;
-            is_verified: boolean;
-            is_active: boolean;
-            created_at: Date;
             vendor: {
                 id: string;
                 status: import("@prisma/client").$Enums.VendorStatus;
                 business_name: string;
             } | null;
+            id: string;
+            created_at: Date;
+            is_active: boolean;
+            email: string;
+            first_name: string;
+            last_name: string;
+            role: import("@prisma/client").$Enums.Role;
+            is_verified: boolean;
         }[];
         meta: {
             page: number;
@@ -30,11 +30,11 @@ export declare class AdminController {
     }>;
     updateUserStatus(adminId: string, userId: string, dto: UpdateUserStatusDto, req: Request): Promise<{
         id: string;
+        is_active: boolean;
         email: string;
         first_name: string;
         last_name: string;
         role: import("@prisma/client").$Enums.Role;
-        is_active: boolean;
     }>;
     listVendors(query: AdminVendorsQueryDto): Promise<{
         data: {
@@ -96,11 +96,11 @@ export declare class AdminController {
                 slug: string;
             };
             vendor: {
-                id: string;
                 store: {
                     name: string;
                     slug: string;
                 } | null;
+                id: string;
                 business_name: string;
             };
             created_at: Date;
@@ -169,8 +169,8 @@ export declare class AdminController {
     }>;
     listCoupons(): Promise<{
         id: string;
-        is_active: boolean;
         created_at: Date;
+        is_active: boolean;
         code: string;
         discount_type: string;
         discount_value: import("@prisma/client-runtime-utils").Decimal;
@@ -181,8 +181,8 @@ export declare class AdminController {
     }[]>;
     createCoupon(adminId: string, dto: CreateCouponDto, req: Request): Promise<{
         id: string;
-        is_active: boolean;
         created_at: Date;
+        is_active: boolean;
         code: string;
         discount_type: string;
         discount_value: import("@prisma/client-runtime-utils").Decimal;
@@ -193,8 +193,8 @@ export declare class AdminController {
     }>;
     updateCoupon(adminId: string, couponId: string, dto: UpdateCouponDto, req: Request): Promise<{
         id: string;
-        is_active: boolean;
         created_at: Date;
+        is_active: boolean;
         code: string;
         discount_type: string;
         discount_value: import("@prisma/client-runtime-utils").Decimal;

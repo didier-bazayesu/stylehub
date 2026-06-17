@@ -24,8 +24,8 @@ export declare class OrdersService {
         updated_at: Date;
         address: {
             id: string;
-            phone: string;
             user_id: string;
+            phone: string;
             full_name: string;
             line1: string;
             line2: string | null;
@@ -37,8 +37,8 @@ export declare class OrdersService {
         };
         payment: {
             id: string;
-            created_at: Date;
             status: import("@prisma/client").$Enums.PaymentStatus;
+            created_at: Date;
             order_id: string;
             stripe_payment_intent: string;
             amount: Prisma.Decimal;
@@ -72,11 +72,11 @@ export declare class OrdersService {
                 color: string | null;
             } | null;
             vendor: {
-                id: string;
                 store: {
                     name: string;
                     slug: string;
                 } | null;
+                id: string;
                 business_name: string;
             };
         }[];
@@ -124,8 +124,8 @@ export declare class OrdersService {
         updated_at: Date;
         address: {
             id: string;
-            phone: string;
             user_id: string;
+            phone: string;
             full_name: string;
             line1: string;
             line2: string | null;
@@ -137,8 +137,8 @@ export declare class OrdersService {
         };
         payment: {
             id: string;
-            created_at: Date;
             status: import("@prisma/client").$Enums.PaymentStatus;
+            created_at: Date;
             order_id: string;
             stripe_payment_intent: string;
             amount: Prisma.Decimal;
@@ -172,11 +172,11 @@ export declare class OrdersService {
                 color: string | null;
             } | null;
             vendor: {
-                id: string;
                 store: {
                     name: string;
                     slug: string;
                 } | null;
+                id: string;
                 business_name: string;
             };
         }[];
@@ -189,8 +189,6 @@ export declare class OrdersService {
             total_price: Prisma.Decimal;
             status: import("@prisma/client").$Enums.OrderStatus;
             order: {
-                id: string;
-                created_at: Date;
                 user: {
                     id: string;
                     email: string;
@@ -199,8 +197,8 @@ export declare class OrdersService {
                 };
                 address: {
                     id: string;
-                    phone: string;
                     user_id: string;
+                    phone: string;
                     full_name: string;
                     line1: string;
                     line2: string | null;
@@ -210,7 +208,9 @@ export declare class OrdersService {
                     country: string;
                     is_default: boolean;
                 };
+                id: string;
                 status: import("@prisma/client").$Enums.OrderStatus;
+                created_at: Date;
             };
             product: {
                 id: string;
