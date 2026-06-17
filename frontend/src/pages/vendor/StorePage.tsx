@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Camera, ExternalLink } from 'lucide-react'
-import { useVendorMe, useUpdateStore, useUploadStoreLogo, useUploadStoreBanner } from '@/api/hooks'
+import { useVendorMe, useCreateStore, useUpdateStore, useUploadStoreLogo, useUploadStoreBanner } from '@/api/hooks'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
@@ -23,6 +23,7 @@ type FormValues = z.infer<typeof schema>
 
 export default function VendorStorePage() {
   const { data: vendor, isLoading } = useVendorMe()
+  const { mutate: createStore, isPending: creating } = useCreateStore()
   const { mutate: updateStore, isPending: updating } = useUpdateStore()
   const { mutate: uploadLogo, isPending: uploadingLogo } = useUploadStoreLogo()
   const { mutate: uploadBanner, isPending: uploadingBanner } = useUploadStoreBanner()
@@ -48,8 +49,14 @@ export default function VendorStorePage() {
         slug: vendor.store.slug,
         description: vendor.store.description ?? '',
       })
+    } else if (vendor) {
+      reset({
+        name: vendor.business_name,
+        slug: slugify(vendor.business_name),
+        description: vendor.description ?? '',
+      })
     }
-  }, [vendor])
+  }, [vendor, reset])
 
   // Auto-generate slug from name when creating
   useEffect(() => {
@@ -69,7 +76,13 @@ export default function VendorStorePage() {
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Main form */}
         <form
-          onSubmit={handleSubmit((v) => updateStore(v))}
+          onSubmit={handleSubmit((v) => {
+            if (store) {
+              updateStore(v)
+            } else {
+              createStore(v)
+            }
+          })}
           className="flex flex-col gap-5 lg:col-span-2"
         >
           <div className="rounded-xl border border-gray-100 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
@@ -102,8 +115,8 @@ export default function VendorStorePage() {
           </div>
 
           <div className="flex items-center justify-between">
-            <Button type="submit" isLoading={updating}>
-              Save changes
+            <Button type="submit" isLoading={store ? updating : creating}>
+              {store ? 'Save changes' : 'Create store'}
             </Button>
             {store && (
               <a
@@ -148,11 +161,16 @@ export default function VendorStorePage() {
                 variant="outline"
                 size="sm"
                 isLoading={uploadingLogo}
+                disabled={!store}
                 onClick={() => logoInputRef.current?.click()}
               >
                 Upload logo
               </Button>
-              <p className="text-center text-xs text-gray-400">PNG, JPG · max 5MB · square image recommended</p>
+              <p className="text-center text-xs text-gray-400">
+                {store
+                  ? 'PNG, JPG · max 5MB · square image recommended'
+                  : 'Save your store first, then upload a logo'}
+              </p>
             </div>
             <input
               ref={logoInputRef}
@@ -188,11 +206,16 @@ export default function VendorStorePage() {
               size="sm"
               fullWidth
               isLoading={uploadingBanner}
+              disabled={!store}
               onClick={() => bannerInputRef.current?.click()}
             >
               Upload banner
             </Button>
-            <p className="mt-2 text-center text-xs text-gray-400">1200×400px recommended · max 5MB</p>
+            <p className="mt-2 text-center text-xs text-gray-400">
+              {store
+                ? '1200×400px recommended · max 5MB'
+                : 'Save your store first, then upload a banner'}
+            </p>
             <input
               ref={bannerInputRef}
               type="file"

@@ -404,6 +404,28 @@ export interface OrderItem {
   variant?: ProductVariant
 }
 
+export interface VendorOrderItem {
+  id: string
+  quantity: number
+  unit_price: number
+  total_price: number
+  status: OrderStatus
+  order: {
+    id: string
+    status: OrderStatus
+    created_at: string
+    user: {
+      id: string
+      first_name: string
+      last_name: string
+      email: string
+    }
+    address: Address | null
+  }
+  product: Pick<Product, 'id' | 'name' | 'slug'>
+  variant: Pick<ProductVariant, 'id' | 'sku' | 'size' | 'color'> | null
+}
+
 export interface CreateOrderPayload {
   address_id: string
   coupon_code?: string

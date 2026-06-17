@@ -444,6 +444,20 @@ export function useStore(slug: string) {
   })
 }
 
+export function useCreateStore() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: { name: string; slug?: string; description?: string }) => {
+      const { data } = await apiClient.post<ApiResponse<Store>>('/stores', payload)
+      return data.data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: QUERY_KEYS.vendorMe })
+      toast.success('Store created.')
+    },
+  })
+}
+
 export function useUpdateStore() {
   const qc = useQueryClient()
   return useMutation({
@@ -452,6 +466,7 @@ export function useUpdateStore() {
       return data.data
     },
     onSuccess: (store) => {
+      qc.invalidateQueries({ queryKey: QUERY_KEYS.vendorMe })
       qc.setQueryData(QUERY_KEYS.store(store.slug), store)
       toast.success('Store updated.')
     },
@@ -470,6 +485,7 @@ export function useUploadStoreLogo() {
       return data.data
     },
     onSuccess: () => {
+      qc.invalidateQueries({ queryKey: QUERY_KEYS.vendorMe })
       qc.invalidateQueries({ queryKey: ['stores'] })
       toast.success('Logo uploaded.')
     },
@@ -488,6 +504,7 @@ export function useUploadStoreBanner() {
       return data.data
     },
     onSuccess: () => {
+      qc.invalidateQueries({ queryKey: QUERY_KEYS.vendorMe })
       qc.invalidateQueries({ queryKey: ['stores'] })
       toast.success('Banner uploaded.')
     },

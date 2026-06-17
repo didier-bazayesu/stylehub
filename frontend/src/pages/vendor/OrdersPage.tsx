@@ -3,7 +3,7 @@ import { useVendorOrders, useUpdateOrderItemStatus } from '@/api/hooks/useOrders
 import { Badge } from '@/components/ui/Badge'
 import { Select } from '@/components/ui/Select'
 import { Pagination } from '@/components/ui/Pagination'
-import {  TableRowSkeleton } from '@/components/ui/Loading'
+import { TableRowSkeleton } from '@/components/ui/Loading'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { usePagination } from '@/hooks'
 import {
@@ -12,7 +12,7 @@ import {
   ORDER_STATUS_COLORS,
   ORDER_STATUS_LABELS,
 } from '@/lib/utils'
-import { OrderStatus } from '@/types'
+import { OrderStatus, type VendorOrderItem } from '@/types'
 import { ShoppingCart } from 'lucide-react'
 
 const STATUS_OPTIONS = [
@@ -27,6 +27,14 @@ const NEXT_STATUS: Partial<Record<OrderStatus, OrderStatus>> = {
   [OrderStatus.SHIPPED]: OrderStatus.DELIVERED,
 }
 
+function getCustomerName(item: VendorOrderItem): string {
+  if (item.order.address?.full_name) {
+    return item.order.address.full_name
+  }
+  const { first_name, last_name } = item.order.user
+  return [first_name, last_name].filter(Boolean).join(' ') || item.order.user.email
+}
+
 export default function VendorOrdersPage() {
   const [statusFilter, setStatusFilter] = useState<OrderStatus | undefined>()
   const { page, limit, goToPage } = usePagination()
@@ -34,7 +42,7 @@ export default function VendorOrdersPage() {
   const { data, isLoading } = useVendorOrders({ status: statusFilter, page, limit })
   const { mutate: updateStatus, isPending: updating } = useUpdateOrderItemStatus()
 
-  const orders = data?.data ?? []
+  const orderItems = data?.data ?? []
   const meta = data?.meta
 
   return (
@@ -63,7 +71,7 @@ export default function VendorOrdersPage() {
           <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
             {isLoading ? (
               [...Array(8)].map((_, i) => <TableRowSkeleton key={i} cols={7} />)
-            ) : !orders.length ? (
+            ) : !orderItems.length ? (
               <tr>
                 <td colSpan={7}>
                   <EmptyState
@@ -74,60 +82,59 @@ export default function VendorOrdersPage() {
                 </td>
               </tr>
             ) : (
-              orders.map((order) => {
-                const vendorItems = order.items || []
-                const canAdvance = vendorItems.some(
-                  (i) => NEXT_STATUS[i.status as OrderStatus],
-                )
-                const currentStatus = vendorItems[0]?.status as OrderStatus
+              orderItems.map((item) => {
+                const nextStatus = NEXT_STATUS[item.status]
 
                 return (
-                  <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                  <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
                     <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">
-                      #{order.id.slice(-8).toUpperCase()}
+                      #{item.order.id.slice(-8).toUpperCase()}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-col">
                         <span className="font-medium text-gray-900 dark:text-gray-100">
-                          {order.address?.full_name ?? '—'}
+                          {getCustomerName(item)}
                         </span>
-                        {order.address?.phone && (
+                        {item.order.address?.phone && (
                           <span className="text-xs text-gray-500 dark:text-gray-400">
-                            {order.address.phone}
+                            {item.order.address.phone}
                           </span>
                         )}
-                        {order.notes && (
-                          <span className="text-xs text-gray-400 dark:text-gray-500 mt-1 line-clamp-1">
-                            Note: {order.notes}
-                          </span>
-                        )}
+                        <span className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                          {item.order.user.email}
+                        </span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-gray-500">{formatDate(order.created_at)}</td>
+                    <td className="px-4 py-3 text-gray-500">
+                      {formatDate(item.order.created_at)}
+                    </td>
                     <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
-                      {vendorItems.length}
+                      <span className="font-medium text-gray-900 dark:text-gray-100">
+                        {item.quantity}×
+                      </span>{' '}
+                      {item.product.name}
                     </td>
                     <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">
-                      {formatCurrency(order.total)}
+                      {formatCurrency(Number(item.total_price))}
                     </td>
                     <td className="px-4 py-3">
-                      <Badge variant={ORDER_STATUS_COLORS[order.status]}>
-                        {ORDER_STATUS_LABELS[order.status]}
+                      <Badge variant={ORDER_STATUS_COLORS[item.status]}>
+                        {ORDER_STATUS_LABELS[item.status]}
                       </Badge>
                     </td>
                     <td className="px-4 py-3">
-                      {canAdvance && currentStatus && NEXT_STATUS[currentStatus] && (
+                      {nextStatus && (
                         <button
                           disabled={updating}
                           onClick={() =>
                             updateStatus({
-                              orderItemId: vendorItems[0].id,
-                              status: NEXT_STATUS[currentStatus]!,
+                              orderItemId: item.id,
+                              status: nextStatus,
                             })
                           }
                           className="rounded-lg border border-gray-200 px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
                         >
-                          Mark as {ORDER_STATUS_LABELS[NEXT_STATUS[currentStatus]!]}
+                          Mark as {ORDER_STATUS_LABELS[nextStatus]}
                         </button>
                       )}
                     </td>
