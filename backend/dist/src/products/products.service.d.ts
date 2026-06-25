@@ -13,9 +13,11 @@ export declare class ProductsService {
             id: string;
             name: string;
             slug: string;
+            status: import("@prisma/client").$Enums.ProductStatus;
             base_price: Prisma.Decimal;
             avg_rating: number;
             review_count: number;
+            total_stock: number;
             is_featured: boolean;
             image: string;
             category: {
@@ -43,9 +45,11 @@ export declare class ProductsService {
         id: string;
         name: string;
         slug: string;
+        status: import("@prisma/client").$Enums.ProductStatus;
         base_price: Prisma.Decimal;
         avg_rating: number;
         review_count: number;
+        total_stock: number;
         is_featured: boolean;
         image: string;
         category: {
@@ -62,6 +66,39 @@ export declare class ProductsService {
             } | null;
         } | undefined;
     }[]>;
+    findOwn(userId: string, query: ProductQueryDto): Promise<{
+        data: {
+            id: string;
+            name: string;
+            slug: string;
+            status: import("@prisma/client").$Enums.ProductStatus;
+            base_price: Prisma.Decimal;
+            avg_rating: number;
+            review_count: number;
+            total_stock: number;
+            is_featured: boolean;
+            image: string;
+            category: {
+                id: string;
+                name: string;
+                slug: string;
+            };
+            vendor: {
+                id: string;
+                business_name: string;
+                store: {
+                    name: string;
+                    slug: string;
+                } | null;
+            } | undefined;
+        }[];
+        meta: {
+            page: number;
+            limit: number;
+            total: number;
+            totalPages: number;
+        };
+    }>;
     findBySlug(slug: string): Promise<{
         id: string;
         name: string;
@@ -74,20 +111,20 @@ export declare class ProductsService {
         avg_rating: number;
         review_count: number;
         images: {
-            url: string;
             id: string;
             product_id: string;
-            public_id: string;
             is_primary: boolean;
+            url: string;
+            public_id: string;
             display_order: number;
         }[];
         variants: {
             id: string;
             product_id: string;
+            price: Prisma.Decimal;
             sku: string;
             size: string | null;
             color: string | null;
-            price: Prisma.Decimal;
             stock: number;
         }[];
         category: {
@@ -96,12 +133,12 @@ export declare class ProductsService {
             slug: string;
         };
         vendor: {
-            id: string;
             store: {
                 name: string;
                 slug: string;
                 logo_url: string | null;
             } | null;
+            id: string;
             business_name: string;
         };
         reviews: {
@@ -114,7 +151,63 @@ export declare class ProductsService {
                 first_name: string;
                 last_name: string;
                 avatar_url: string | null;
-            };
+            } | null;
+        }[];
+        created_at: Date;
+    }>;
+    findOwnProductBySlug(userId: string, slug: string): Promise<{
+        id: string;
+        name: string;
+        slug: string;
+        description: string;
+        base_price: Prisma.Decimal;
+        status: import("@prisma/client").$Enums.ProductStatus;
+        is_featured: boolean;
+        total_stock: number;
+        avg_rating: number;
+        review_count: number;
+        images: {
+            id: string;
+            product_id: string;
+            is_primary: boolean;
+            url: string;
+            public_id: string;
+            display_order: number;
+        }[];
+        variants: {
+            id: string;
+            product_id: string;
+            price: Prisma.Decimal;
+            sku: string;
+            size: string | null;
+            color: string | null;
+            stock: number;
+        }[];
+        category: {
+            id: string;
+            name: string;
+            slug: string;
+        };
+        vendor: {
+            store: {
+                name: string;
+                slug: string;
+                logo_url: string | null;
+            } | null;
+            id: string;
+            business_name: string;
+        };
+        reviews: {
+            id: string;
+            rating: number;
+            comment: string | null;
+            is_verified_purchase: boolean;
+            created_at: Date;
+            user: {
+                first_name: string;
+                last_name: string;
+                avatar_url: string | null;
+            } | null;
         }[];
         created_at: Date;
     }>;
@@ -185,11 +278,11 @@ export declare class ProductsService {
         message: string;
     }>;
     addImages(userId: string, productId: string, files: Express.Multer.File[]): Promise<{
-        url: string;
         id: string;
         product_id: string;
-        public_id: string;
         is_primary: boolean;
+        url: string;
+        public_id: string;
         display_order: number;
     }[]>;
     removeImage(userId: string, productId: string, imageId: string): Promise<{
@@ -198,19 +291,19 @@ export declare class ProductsService {
     addVariant(userId: string, productId: string, dto: CreateVariantDto): Promise<{
         id: string;
         product_id: string;
+        price: Prisma.Decimal;
         sku: string;
         size: string | null;
         color: string | null;
-        price: Prisma.Decimal;
         stock: number;
     }>;
     updateVariant(userId: string, productId: string, variantId: string, dto: UpdateVariantDto): Promise<{
         id: string;
         product_id: string;
+        price: Prisma.Decimal;
         sku: string;
         size: string | null;
         color: string | null;
-        price: Prisma.Decimal;
         stock: number;
     }>;
     removeVariant(userId: string, productId: string, variantId: string): Promise<{

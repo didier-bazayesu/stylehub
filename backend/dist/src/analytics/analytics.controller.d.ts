@@ -44,14 +44,14 @@ export declare class AnalyticsController {
         revenue: number;
         orders: number;
         recent_orders: {
-            id: string;
-            created_at: Date;
             user: {
                 email: string;
                 first_name: string;
                 last_name: string;
             };
+            id: string;
             status: import("@prisma/client").$Enums.OrderStatus;
+            created_at: Date;
             total: import("@prisma/client-runtime-utils").Decimal;
         }[];
     }>;

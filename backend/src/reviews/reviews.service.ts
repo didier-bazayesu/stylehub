@@ -125,7 +125,7 @@ export class ReviewsService {
       user_id: product.vendor.user_id,
       type: NotificationType.REVIEW,
       title: 'New product review',
-      message: `${review.user.first_name} left a ${dto.rating}-star review on ${product.name}.`,
+      message: `${review.user?.first_name ?? 'Someone'} left a ${dto.rating}-star review on ${product.name}.`,
       data: {
         product_id: productId,
         review_id: review.id,
@@ -227,11 +227,12 @@ export class ReviewsService {
     is_verified_purchase: boolean;
     created_at: Date;
     updated_at: Date;
+    // user is nullable — becomes null when the author's account is deleted (SetNull)
     user: {
       first_name: string;
       last_name: string;
       avatar_url: string | null;
-    };
+    } | null;
   }) {
     return {
       id: review.id,
@@ -240,11 +241,13 @@ export class ReviewsService {
       is_verified_purchase: review.is_verified_purchase,
       created_at: review.created_at,
       updated_at: review.updated_at,
-      user: {
-        first_name: review.user.first_name,
-        last_name: review.user.last_name,
-        avatar_url: review.user.avatar_url,
-      },
+      user: review.user
+        ? {
+            first_name: review.user.first_name,
+            last_name: review.user.last_name,
+            avatar_url: review.user.avatar_url,
+          }
+        : null,
     };
   }
 }

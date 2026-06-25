@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { ROUTES } from "@/config/constants";
 import { useUIStore, useAuthStore } from "@/store";
 import { useNotifications } from "@/api/hooks";
+import { BackButton } from "./BackButton";
 
 const navItems = [
   { to: ROUTES.CUSTOMER.ORDERS, icon: ShoppingBag, label: "Orders" },
@@ -102,6 +103,9 @@ export function CustomerSidebar() {
           </NavLink>
         ))}
       </nav>
+
+      {/* Back to Store */}
+      <BackButton sidebarOpen={sidebarOpen} />
 
       {/* User footer */}
       {sidebarOpen && (

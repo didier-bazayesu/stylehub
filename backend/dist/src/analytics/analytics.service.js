@@ -182,16 +182,19 @@ let AnalyticsService = class AnalyticsService {
         const orderItems = await this.getVendorOrderItems(vendorId, startDate);
         const productMap = new Map();
         for (const item of orderItems) {
-            const existing = productMap.get(item.product_id) ?? {
-                product_id: item.product_id,
-                name: item.product.name,
-                slug: item.product.slug,
+            const productId = item.product_id ?? item.product_name;
+            if (!productId)
+                continue;
+            const existing = productMap.get(productId) ?? {
+                product_id: productId,
+                name: item.product?.name ?? item.product_name ?? 'Deleted product',
+                slug: item.product?.slug ?? '',
                 revenue: 0,
                 units_sold: 0,
             };
             existing.revenue += Number(item.total_price);
             existing.units_sold += item.quantity;
-            productMap.set(item.product_id, existing);
+            productMap.set(productId, existing);
         }
         return [...productMap.values()]
             .sort((a, b) => b.revenue - a.revenue)

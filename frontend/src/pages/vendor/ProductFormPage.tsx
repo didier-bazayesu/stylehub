@@ -1,149 +1,243 @@
-import { useState, useEffect } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { Plus, Upload, ArrowLeft } from 'lucide-react'
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Plus, Upload, ArrowLeft, Pencil, Trash2, X } from "lucide-react";
 import { useUpdateProductStatus } from "@/api/hooks/useProducts";
 import {
   useCreateProduct,
   useUpdateProduct,
-  useProduct,
+  useVendorProduct,
   useAddVariant,
   useUploadProductImages,
-} from '@/api/hooks/useProducts'
-import { useCategories } from '@/api/hooks'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-import { Badge } from '@/components/ui/Badge'
-import { PageLoader } from '@/components/ui/Loading'
-import { useFileUpload } from '@/hooks'
-import { ROUTES } from '@/config/constants'
-import { ProductStatus } from '@/types'
+  useUpdateVariant,
+  useDeleteVariant,
+  useDeleteProductImage,
+} from "@/api/hooks/useProducts";
+import { useCategories } from "@/api/hooks";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Badge } from "@/components/ui/Badge";
+import { PageLoader } from "@/components/ui/Loading";
+import { useFileUpload } from "@/hooks";
+import { ROUTES } from "@/config/constants";
+import { ProductStatus, type ProductVariant } from "@/types";
 
 // ─── Schemas ──────────────────────────────────────────────────────────────────
 
 const detailsSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  category_id: z.string().min(1, 'Select a category'),
-  description: z.string().min(20, 'Write at least 20 characters'),
-  base_price: z.coerce.number().min(0.01, 'Price must be greater than 0'),
-})
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  category_id: z.string().min(1, "Select a category"),
+  description: z.string().min(20, "Write at least 20 characters"),
+  base_price: z.coerce.number().min(0.01, "Price must be greater than 0"),
+});
 
 const variantSchema = z.object({
-  sku: z.string().min(1, 'SKU is required'),
+  sku: z.string().min(1, "SKU is required"),
   size: z.string().optional(),
   color: z.string().optional(),
   price: z.coerce.number().min(0.01),
   stock: z.coerce.number().int().min(0),
-})
+});
 
-type DetailsValues = z.infer<typeof detailsSchema>
-type VariantValues = z.infer<typeof variantSchema>
+type DetailsValues = z.infer<typeof detailsSchema>;
+type VariantValues = z.infer<typeof variantSchema>;
 
 // ─── Steps ────────────────────────────────────────────────────────────────────
 
-const STEPS = ['Details', 'Variants', 'Images', 'Publish'] as const
-type Step = (typeof STEPS)[number]
+const STEPS = ["Details", "Variants", "Images", "Publish"] as const;
+type Step = (typeof STEPS)[number];
 
 export default function ProductFormPage() {
-  const { id } = useParams<{ id: string }>()
-  const isEditing = Boolean(id)
-  const navigate = useNavigate()
+  const { id: slugOrId } = useParams<{ id: string }>();
+  const isEditing = Boolean(slugOrId);
+  const navigate = useNavigate();
 
-  const [step, setStep] = useState<Step>('Details')
-  const [productId, setProductId] = useState<string | null>(id ?? null)
+  const [step, setStep] = useState<Step>("Details");
+  const [productId, setProductId] = useState<string | null>(null);
   const [hasVariants, setHasVariants] = useState(false);
+  const [editingVariantId, setEditingVariantId] = useState<string | null>(null);
 
-  // Fetch existing product for editing
-  // const { data: existingProduct, isLoading: loadingProduct } = useProduct(
-  //   productId ? `${productId}` : '',
-  // )
- const { data: existingProduct, isLoading: loadingProduct } = useProduct(
-   isEditing ? id! : "",
- );
+  // Fetch the vendor-owned product so archived items can still be edited
+  const { data: existingProduct, isLoading: loadingProduct } = useVendorProduct(
+    isEditing ? slugOrId! : "",
+  );
 
-  const { data: categories } = useCategories()
-  const { mutate: createProduct, isPending: creating } = useCreateProduct()
-  const { mutate: updateProduct, isPending: updating } = useUpdateProduct(productId ?? '')
-  const { mutate: addVariant, isPending: addingVariant } = useAddVariant(productId ?? '')
-  const { mutate: uploadImages, isPending: uploadingImages } = useUploadProductImages(productId ?? '')
+  // Once product loads, capture the real DB id for mutations
+  useEffect(() => {
+    if (existingProduct) {
+      setProductId(existingProduct.id);
+    }
+  }, [existingProduct]);
 
-  const { files, previews, onInputChange, onDrop, clear: clearFiles, openPicker,inputRef } = useFileUpload({
+  const { data: categories } = useCategories();
+  const { mutate: createProduct, isPending: creating } = useCreateProduct();
+  const { mutate: updateProduct, isPending: updating } = useUpdateProduct(
+    productId ?? "",
+  );
+  const { mutate: addVariant, isPending: addingVariant } = useAddVariant(
+    productId ?? "",
+  );
+  const { mutate: updateVariant, isPending: updatingVariant } =
+    useUpdateVariant(productId ?? "");
+  const { mutate: deleteVariant } = useDeleteVariant(productId ?? "");
+  const { mutate: deleteImage } = useDeleteProductImage(productId ?? "");
+  const { mutate: uploadImages, isPending: uploadingImages } =
+    useUploadProductImages(productId ?? "");
+
+  const {
+    files,
+    previews,
+    onInputChange,
+    onDrop,
+    clear: clearFiles,
+    openPicker,
+    inputRef,
+  } = useFileUpload({
     multiple: true,
     maxSizeBytes: 5 * 1024 * 1024,
-  })
-  const { mutate: updateStatus} =
-    useUpdateProductStatus();
+  });
+  const { mutate: updateStatus } = useUpdateProductStatus();
 
-  const detailsForm = useForm<DetailsValues>({ resolver: zodResolver(detailsSchema) })
-  const variantForm = useForm<VariantValues>({ resolver: zodResolver(variantSchema) })
+  const detailsForm = useForm<DetailsValues>({
+    resolver: zodResolver(detailsSchema),
+  });
+  const variantForm = useForm<VariantValues>({
+    resolver: zodResolver(variantSchema),
+  });
 
+  // Pre-fill form with existing product data
   useEffect(() => {
     if (existingProduct && isEditing) {
       detailsForm.reset({
         name: existingProduct.name,
-        category_id: existingProduct.category_id,
+        category_id: existingProduct.category?.id ?? "",
         description: existingProduct.description,
-        base_price: existingProduct.base_price,
-      })
+        base_price: Number(existingProduct.base_price),
+      });
+      setHasVariants((existingProduct.variants?.length ?? 0) > 0);
     }
-  }, [existingProduct, isEditing,detailsForm])
+  }, [existingProduct, isEditing, detailsForm]);
 
-  if (loadingProduct && isEditing) return <PageLoader />
+  // Reset variant form when editing is cancelled
+  useEffect(() => {
+    if (!editingVariantId) {
+      variantForm.reset();
+    }
+  }, [editingVariantId, variantForm]);
 
-  const currentStepIndex = STEPS.indexOf(step)
+  if (loadingProduct && isEditing) return <PageLoader />;
+
+  const currentStepIndex = STEPS.indexOf(step);
 
   const handleDetailsSubmit = (values: DetailsValues) => {
     if (productId) {
-      updateProduct(values, { onSuccess: () => setStep('Variants') })
+      updateProduct(values, { onSuccess: () => setStep("Variants") });
     } else {
       createProduct(values, {
         onSuccess: (product) => {
-          setProductId(product.id)
-          setStep('Variants')
+          setProductId(product.id);
+          setStep("Variants");
         },
-      })
+      });
     }
-  }
+  };
 
-  // const handleAddVariant = (values: VariantValues) => {
-  //   if (!productId) return
-  //   addVariant(values, { onSuccess: () => variantForm.reset() })
-  // }
   const handleAddVariant = (values: VariantValues) => {
     if (!productId) return;
 
-    addVariant(values, {
+    if (editingVariantId) {
+      // Update existing variant - ONLY send size, color, price, stock
+      const updatePayload = {
+        size: values.size,
+        color: values.color,
+        price: values.price,
+        stock: values.stock,
+      };
+
+      updateVariant(
+        { variantId: editingVariantId, payload: updatePayload },
+        {
+          onSuccess: () => {
+            setEditingVariantId(null);
+            variantForm.reset({
+              sku: "",
+              size: "",
+              color: "",
+              price: 0,
+              stock: 0,
+            });
+          },
+        },
+      );
+      console.log("Updating variant with payload:", updatePayload); // Debug
+    } else {
+      // Add new variant - send all fields including sku
+      addVariant(values, {
+        onSuccess: () => {
+          setHasVariants(true);
+          variantForm.reset({
+            sku: "",
+            size: "",
+            color: "",
+            price: 0,
+            stock: 0,
+          });
+        },
+      });
+    }
+  };
+
+  const handleUploadImages = () => {
+    if (!productId || !files.length) return;
+    uploadImages(files, {
       onSuccess: () => {
-        setHasVariants(true);
-        variantForm.reset();
+        clearFiles();
+        setStep("Publish");
       },
     });
   };
 
-  const handleUploadImages = () => {
-    if (!productId || !files.length) return
-    uploadImages(files, { onSuccess: () => { clearFiles(); setStep('Publish') } })
-  }
+  const handlePublish = () => {
+    if (!productId) return;
 
-const handlePublish = () => {
-  if (!productId) return;
-
-  updateStatus(
-    {
-      id: productId,
-      status: ProductStatus.ACTIVE,
-    },
-    {
-      onSuccess: () => {
-        navigate(ROUTES.VENDOR.PRODUCTS);
+    updateStatus(
+      {
+        id: productId,
+        status: ProductStatus.ACTIVE,
       },
-    },
-  );
-};
+      {
+        onSuccess: () => {
+          navigate(ROUTES.VENDOR.PRODUCTS);
+        },
+      },
+    );
+  };
 
-  
+  const handleDeleteVariant = (variantId: string) => {
+    if (confirm("Delete this variant?")) {
+      deleteVariant({ variantId });
+    }
+  };
+
+  const handleDeleteImage = (imageId: string) => {
+    if (confirm("Delete this image?")) {
+      deleteImage({ imageId });
+    }
+  };
+
+  const handleEditVariant = (variant: ProductVariant) => {
+    variantForm.reset({
+      sku: variant.sku, // This stays for display only
+      size: variant.size ?? "",
+      color: variant.color ?? "",
+      price: Number(variant.price),
+      stock: variant.stock,
+    });
+    setEditingVariantId(variant.id);
+  };
+
   return (
     <div className="mx-auto max-w-2xl p-6">
       {/* Header */}
@@ -282,9 +376,29 @@ const handlePublish = () => {
                         <span className="text-gray-500">Color: {v.color}</span>
                       )}
                     </div>
-                    <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
-                      <span>${v.price}</span>
-                      <span>{v.stock} in stock</span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-gray-700 dark:text-gray-300">
+                        ${v.price}
+                      </span>
+                      <span className="text-gray-700 dark:text-gray-300">
+                        {v.stock} in stock
+                      </span>
+                      {/* Edit — fill form */}
+                      <button
+                        onClick={() => handleEditVariant(v)}
+                        className="flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-700"
+                        title="Edit variant"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      {/* Delete */}
+                      <button
+                        onClick={() => handleDeleteVariant(v.id)}
+                        className="flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950"
+                        title="Delete variant"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -292,22 +406,30 @@ const handlePublish = () => {
             </div>
           )}
 
-          {/* Add variant form */}
+          {/* Add / Edit variant form */}
           <form
             onSubmit={variantForm.handleSubmit(handleAddVariant)}
             className="rounded-xl border border-gray-100 bg-white p-5 dark:border-gray-800 dark:bg-gray-900"
           >
             <h3 className="mb-4 text-sm font-medium text-gray-900 dark:text-white">
-              Add variant
+              {editingVariantId ? "Edit variant" : "Add variant"}
             </h3>
             <div className="grid grid-cols-2 gap-4">
-              <Input
-                label="SKU"
-                required
-                placeholder="e.g. SHIRT-BLK-M"
-                error={variantForm.formState.errors.sku?.message}
-                {...variantForm.register("sku")}
-              />
+              <div className="flex flex-col gap-1">
+                <Input
+                  label="SKU"
+                  required
+                  placeholder="e.g. SHIRT-BLK-M"
+                  disabled={!!editingVariantId}
+                  error={variantForm.formState.errors.sku?.message}
+                  {...variantForm.register("sku")}
+                />
+                {editingVariantId && (
+                  <p className="text-xs text-gray-400">
+                    SKU cannot be changed after creation
+                  </p>
+                )}
+              </div>
               <Input
                 label="Size"
                 placeholder="S / M / L / XL"
@@ -335,25 +457,42 @@ const handlePublish = () => {
                 {...variantForm.register("stock")}
               />
             </div>
-            <Button
-              type="submit"
-              variant="outline"
-              size="sm"
-              isLoading={addingVariant}
-              leftIcon={<Plus className="h-4 w-4" />}
-              className="mt-4"
-            >
-              Add variant
-            </Button>
+            <div className="mt-4 flex gap-2">
+              <Button
+                type="submit"
+                variant="outline"
+                size="sm"
+                isLoading={addingVariant || updatingVariant}
+                leftIcon={
+                  editingVariantId ? (
+                    <Pencil className="h-4 w-4" />
+                  ) : (
+                    <Plus className="h-4 w-4" />
+                  )
+                }
+              >
+                {editingVariantId ? "Update variant" : "Add variant"}
+              </Button>
+              {editingVariantId && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setEditingVariantId(null);
+                    variantForm.reset();
+                  }}
+                >
+                  Cancel
+                </Button>
+              )}
+            </div>
           </form>
 
           <div className="flex justify-between">
             <Button variant="ghost" onClick={() => setStep("Details")}>
               Back
             </Button>
-            {/* <Button onClick={() => setStep('Images')} disabled={!existingProduct?.variants?.length}>
-              Continue
-            </Button> */}
             <Button
               onClick={() => setStep("Images")}
               disabled={!hasVariants && !existingProduct?.variants?.length}
@@ -389,10 +528,10 @@ const handlePublish = () => {
               multiple
               className="hidden"
               onChange={onInputChange}
-
             />
           </div>
 
+          {/* New image previews */}
           {previews.length > 0 && (
             <div className="grid grid-cols-4 gap-3">
               {previews.map((url, i) => (
@@ -410,7 +549,7 @@ const handlePublish = () => {
             </div>
           )}
 
-          {/* Existing images */}
+          {/* Existing images with delete */}
           {existingProduct?.images && existingProduct.images.length > 0 && (
             <div>
               <p className="mb-2 text-xs text-gray-500">Current images</p>
@@ -418,13 +557,25 @@ const handlePublish = () => {
                 {existingProduct.images.map((img) => (
                   <div
                     key={img.id}
-                    className="aspect-square overflow-hidden rounded-lg bg-gray-100"
+                    className="group relative aspect-square overflow-hidden rounded-lg bg-gray-100"
                   >
                     <img
                       src={img.url}
                       alt=""
                       className="h-full w-full object-cover"
                     />
+                    <button
+                      onClick={() => handleDeleteImage(img.id)}
+                      className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                      title="Delete image"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                    {img.is_primary && (
+                      <span className="absolute bottom-1 left-1 rounded bg-black/60 px-1 py-0.5 text-[10px] text-white">
+                        Primary
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>

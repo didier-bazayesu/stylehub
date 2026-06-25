@@ -13,10 +13,13 @@ exports.VendorsService = void 0;
 const common_1 = require("@nestjs/common");
 const client_1 = require("@prisma/client");
 const prisma_service_1 = require("../prisma/prisma.service");
+const notifications_service_1 = require("../notifications/notifications.service");
 let VendorsService = class VendorsService {
     prisma;
-    constructor(prisma) {
+    notificationsService;
+    constructor(prisma, notificationsService) {
         this.prisma = prisma;
+        this.notificationsService = notificationsService;
     }
     async apply(userId, dto) {
         const user = await this.prisma.user.findFirst({
@@ -51,6 +54,12 @@ let VendorsService = class VendorsService {
             });
             return createdVendor;
         });
+        await this.notificationsService.notifyAdmins({
+            type: client_1.NotificationType.SYSTEM,
+            title: 'Vendor application submitted',
+            message: `${vendor.business_name} (${vendor.business_email}) submitted a vendor application and is awaiting approval.`,
+            data: { vendor_id: vendor.id, user_id: userId },
+        });
         return {
             id: vendor.id,
             status: vendor.status,
@@ -61,7 +70,30 @@ let VendorsService = class VendorsService {
         };
     }
     async getMe(userId) {
-        const vendor = await this.findVendorByUserId(userId);
+        const vendor = await this.prisma.vendor.findFirst({
+            where: { user_id: userId, deleted_at: null },
+            include: {
+                store: {
+                    select: {
+                        id: true,
+                        name: true,
+                        slug: true,
+                        logo_url: true,
+                        banner_url: true,
+                        description: true,
+                        is_active: true,
+                        created_at: true,
+                        updated_at: true,
+                    },
+                },
+            },
+        });
+        if (!vendor) {
+            throw new common_1.NotFoundException({
+                code: 'VENDOR_NOT_FOUND',
+                message: 'Vendor profile not found.',
+            });
+        }
         return this.mapVendor(vendor);
     }
     async updateMe(userId, dto) {
@@ -147,12 +179,14 @@ let VendorsService = class VendorsService {
             rejection_reason: vendor.rejection_reason,
             created_at: vendor.created_at,
             updated_at: vendor.updated_at,
+            store: vendor.store ?? null,
         };
     }
 };
 exports.VendorsService = VendorsService;
 exports.VendorsService = VendorsService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        notifications_service_1.NotificationsService])
 ], VendorsService);
 //# sourceMappingURL=vendors.service.js.map

@@ -248,6 +248,7 @@ export interface Product {
   images?: ProductImage[]
   reviews?: Review[]
 }
+
 export interface ProductListItem {
   id: string
   name: string
@@ -256,22 +257,26 @@ export interface ProductListItem {
   avg_rating: number
   review_count: number
   is_featured: boolean
-  image?: string  | undefined        // single pre-resolved URL
+  image?: string | null          // pre-resolved primary image URL
   category: Category
   vendor?: Vendor
-   variants?: ProductVariant[]
+  variants?: ProductVariant[]
 }
-export interface ProductListItem {
+
+
+// Shape returned by GET /products/manage (vendor-scoped, all statuses)
+export interface VendorProduct {
   id: string
   name: string
   slug: string
+  status: ProductStatus         // always present — vendor list needs it
   base_price: number
+  total_stock: number
   avg_rating: number
   review_count: number
   is_featured: boolean
-  image?: string | undefined        // single pre-resolved URL
+  image: string | null          // pre-resolved primary image URL
   category: Category
-  vendor?: Vendor
 }
 
 export interface ProductVariant {
@@ -397,6 +402,28 @@ export interface OrderItem {
   status: OrderStatus
   product?: Product
   variant?: ProductVariant
+}
+
+export interface VendorOrderItem {
+  id: string
+  quantity: number
+  unit_price: number
+  total_price: number
+  status: OrderStatus
+  order: {
+    id: string
+    status: OrderStatus
+    created_at: string
+    user: {
+      id: string
+      first_name: string
+      last_name: string
+      email: string
+    }
+    address: Address | null
+  }
+  product: Pick<Product, 'id' | 'name' | 'slug'>
+  variant: Pick<ProductVariant, 'id' | 'sku' | 'size' | 'color'> | null
 }
 
 export interface CreateOrderPayload {

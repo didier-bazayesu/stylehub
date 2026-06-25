@@ -52,6 +52,12 @@ let AdminController = class AdminController {
     listOrders(query) {
         return this.adminService.listOrders(query);
     }
+    cancelOrderItem(adminId, orderItemId, req) {
+        return this.adminService.cancelOrderItem(adminId, orderItemId, req.ip);
+    }
+    refundOrderItem(adminId, orderItemId, req) {
+        return this.adminService.refundOrderItem(adminId, orderItemId, req.ip);
+    }
     listAuditLogs(query) {
         return this.adminService.listAuditLogs(query);
     }
@@ -153,6 +159,26 @@ __decorate([
     __metadata("design:paramtypes", [dto_1.AdminOrdersQueryDto]),
     __metadata("design:returntype", void 0)
 ], AdminController.prototype, "listOrders", null);
+__decorate([
+    (0, common_1.Patch)('orders/items/:id/cancel'),
+    (0, swagger_1.ApiOperation)({ summary: 'Cancel an order item (admin)' }),
+    __param(0, (0, decorators_1.CurrentUser)('id')),
+    __param(1, (0, common_1.Param)('id')),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "cancelOrderItem", null);
+__decorate([
+    (0, common_1.Patch)('orders/items/:id/refund'),
+    (0, swagger_1.ApiOperation)({ summary: 'Refund an order item (admin)' }),
+    __param(0, (0, decorators_1.CurrentUser)('id')),
+    __param(1, (0, common_1.Param)('id')),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "refundOrderItem", null);
 __decorate([
     (0, common_1.Get)('audit-logs'),
     (0, swagger_1.ApiOperation)({ summary: 'List audit log entries' }),

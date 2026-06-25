@@ -1,27 +1,29 @@
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { OrdersService } from '../orders/orders.service';
 import { AdminUsersQueryDto, UpdateUserStatusDto, AdminVendorsQueryDto, RejectVendorDto, AdminProductsQueryDto, AdminOrdersQueryDto, CreateCouponDto, UpdateCouponDto } from './dto';
 import { PaginationQueryDto } from '../common/dto';
 export declare class AdminService {
     private prisma;
     private notificationsService;
-    constructor(prisma: PrismaService, notificationsService: NotificationsService);
+    private ordersService;
+    constructor(prisma: PrismaService, notificationsService: NotificationsService, ordersService: OrdersService);
     listUsers(query: AdminUsersQueryDto): Promise<{
         data: {
-            id: string;
-            email: string;
-            first_name: string;
-            last_name: string;
-            role: import("@prisma/client").$Enums.Role;
-            is_verified: boolean;
-            is_active: boolean;
-            created_at: Date;
             vendor: {
                 id: string;
                 status: import("@prisma/client").$Enums.VendorStatus;
                 business_name: string;
             } | null;
+            id: string;
+            created_at: Date;
+            is_active: boolean;
+            email: string;
+            first_name: string;
+            last_name: string;
+            role: import("@prisma/client").$Enums.Role;
+            is_verified: boolean;
         }[];
         meta: {
             page: number;
@@ -32,11 +34,11 @@ export declare class AdminService {
     }>;
     updateUserStatus(adminId: string, userId: string, dto: UpdateUserStatusDto, ipAddress?: string): Promise<{
         id: string;
+        is_active: boolean;
         email: string;
         first_name: string;
         last_name: string;
         role: import("@prisma/client").$Enums.Role;
-        is_active: boolean;
     }>;
     listVendors(query: AdminVendorsQueryDto): Promise<{
         data: {
@@ -98,11 +100,11 @@ export declare class AdminService {
                 slug: string;
             };
             vendor: {
-                id: string;
                 store: {
                     name: string;
                     slug: string;
                 } | null;
+                id: string;
                 business_name: string;
             };
             created_at: Date;
@@ -140,6 +142,16 @@ export declare class AdminService {
             totalPages: number;
         };
     }>;
+    cancelOrderItem(adminId: string, orderItemId: string, ipAddress?: string): Promise<{
+        id: string;
+        status: import("@prisma/client").$Enums.OrderStatus;
+        message: string;
+    }>;
+    refundOrderItem(adminId: string, orderItemId: string, ipAddress?: string): Promise<{
+        id: string;
+        status: "REFUNDED";
+        message: string;
+    }>;
     listAuditLogs(query: PaginationQueryDto): Promise<{
         data: {
             id: string;
@@ -161,8 +173,8 @@ export declare class AdminService {
     }>;
     listCoupons(): Promise<{
         id: string;
-        is_active: boolean;
         created_at: Date;
+        is_active: boolean;
         code: string;
         discount_type: string;
         discount_value: Prisma.Decimal;
@@ -173,8 +185,8 @@ export declare class AdminService {
     }[]>;
     createCoupon(adminId: string, dto: CreateCouponDto, ipAddress?: string): Promise<{
         id: string;
-        is_active: boolean;
         created_at: Date;
+        is_active: boolean;
         code: string;
         discount_type: string;
         discount_value: Prisma.Decimal;
@@ -185,8 +197,8 @@ export declare class AdminService {
     }>;
     updateCoupon(adminId: string, couponId: string, dto: UpdateCouponDto, ipAddress?: string): Promise<{
         id: string;
-        is_active: boolean;
         created_at: Date;
+        is_active: boolean;
         code: string;
         discount_type: string;
         discount_value: Prisma.Decimal;

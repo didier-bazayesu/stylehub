@@ -117,24 +117,24 @@ export default function VendorDashboardPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
-                {ordersData.data.map((order) => (
+                {ordersData.data.map((item) => (
                   <tr
-                    key={order.id}
+                    key={item.id}
                     className="hover:bg-gray-50 dark:hover:bg-gray-800/50"
                   >
                     <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">
-                      #{order.id.slice(-8).toUpperCase()}
+                      #{item.order.id.slice(-8).toUpperCase()}
                     </td>
                     <td className="px-4 py-3 text-gray-500">
-                      {formatDate(order.created_at)}
+                      {formatDate(item.order.created_at)}
                     </td>
                     <td className="px-4 py-3">
-                      <Badge variant={ORDER_STATUS_COLORS[order.status]}>
-                        {ORDER_STATUS_LABELS[order.status]}
+                      <Badge variant={ORDER_STATUS_COLORS[item.status]}>
+                        {ORDER_STATUS_LABELS[item.status]}
                       </Badge>
                     </td>
                     <td className="px-4 py-3 text-right font-medium text-gray-900 dark:text-gray-100">
-                      {formatCurrency(order.total)}
+                      {formatCurrency(Number(item.total_price))}
                     </td>
                   </tr>
                 ))}

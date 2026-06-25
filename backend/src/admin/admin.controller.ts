@@ -109,6 +109,26 @@ export class AdminController {
     return this.adminService.listOrders(query);
   }
 
+  @Patch('orders/items/:id/cancel')
+  @ApiOperation({ summary: 'Cancel an order item (admin)' })
+  cancelOrderItem(
+    @CurrentUser('id') adminId: string,
+    @Param('id') orderItemId: string,
+    @Req() req: Request,
+  ) {
+    return this.adminService.cancelOrderItem(adminId, orderItemId, req.ip);
+  }
+
+  @Patch('orders/items/:id/refund')
+  @ApiOperation({ summary: 'Refund an order item (admin)' })
+  refundOrderItem(
+    @CurrentUser('id') adminId: string,
+    @Param('id') orderItemId: string,
+    @Req() req: Request,
+  ) {
+    return this.adminService.refundOrderItem(adminId, orderItemId, req.ip);
+  }
+
   @Get('audit-logs')
   @ApiOperation({ summary: 'List audit log entries' })
   listAuditLogs(@Query() query: PaginationQueryDto) {

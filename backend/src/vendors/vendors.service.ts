@@ -4,13 +4,17 @@ import {
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
-import { Role, VendorStatus } from '@prisma/client';
+import { NotificationType, Role, VendorStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { ApplyVendorDto, UpdateVendorDto } from './dto';
 
 @Injectable()
 export class VendorsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificationsService: NotificationsService,
+  ) {}
 
   async apply(userId: string, dto: ApplyVendorDto) {
     const user = await this.prisma.user.findFirst({
@@ -51,6 +55,13 @@ export class VendorsService {
       return createdVendor;
     });
 
+    await this.notificationsService.notifyAdmins({
+      type: NotificationType.SYSTEM,
+      title: 'Vendor application submitted',
+      message: `${vendor.business_name} (${vendor.business_email}) submitted a vendor application and is awaiting approval.`,
+      data: { vendor_id: vendor.id, user_id: userId },
+    });
+
     return {
       id: vendor.id,
       status: vendor.status,
@@ -62,7 +73,32 @@ export class VendorsService {
   }
 
   async getMe(userId: string) {
-    const vendor = await this.findVendorByUserId(userId);
+    const vendor = await this.prisma.vendor.findFirst({
+      where: { user_id: userId, deleted_at: null },
+      include: {
+        store: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            logo_url: true,
+            banner_url: true,
+            description: true,
+            is_active: true,
+            created_at: true,
+            updated_at: true,
+          },
+        },
+      },
+    });
+
+    if (!vendor) {
+      throw new NotFoundException({
+        code: 'VENDOR_NOT_FOUND',
+        message: 'Vendor profile not found.',
+      });
+    }
+
     return this.mapVendor(vendor);
   }
 
@@ -164,6 +200,17 @@ export class VendorsService {
     rejection_reason: string | null;
     created_at: Date;
     updated_at: Date;
+    store?: {
+      id: string;
+      name: string;
+      slug: string;
+      logo_url: string | null;
+      banner_url: string | null;
+      description: string | null;
+      is_active: boolean;
+      created_at: Date;
+      updated_at: Date;
+    } | null;
   }) {
     return {
       id: vendor.id,
@@ -174,6 +221,7 @@ export class VendorsService {
       rejection_reason: vendor.rejection_reason,
       created_at: vendor.created_at,
       updated_at: vendor.updated_at,
+      store: vendor.store ?? null,
     };
   }
 }

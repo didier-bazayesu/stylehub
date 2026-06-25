@@ -16,7 +16,7 @@ export declare class ReviewsController {
                 first_name: string;
                 last_name: string;
                 avatar_url: string | null;
-            };
+            } | null;
         }[];
         meta: {
             page: number;
@@ -36,7 +36,7 @@ export declare class ReviewsController {
             first_name: string;
             last_name: string;
             avatar_url: string | null;
-        };
+        } | null;
     }>;
     update(userId: string, reviewId: string, dto: UpdateReviewDto): Promise<{
         id: string;
@@ -49,7 +49,7 @@ export declare class ReviewsController {
             first_name: string;
             last_name: string;
             avatar_url: string | null;
-        };
+        } | null;
     }>;
     remove(userId: string, reviewId: string): Promise<{
         message: string;

@@ -9,25 +9,32 @@ import {
   LogOut,
   LayoutDashboard,
   Store,
-  Bell,
 } from "lucide-react";
 import { useAuthStore, useCartStore, useUIStore } from "@/store";
 import { useLogout } from "@/api/hooks/useAuth";
+import { useCart } from "@/api/hooks/useCart";
 import { Button } from "@/components/ui/Button";
 import { ROUTES } from "@/config/constants";
 import { getInitials } from "@/lib/utils";
 import { useState, useRef, useEffect } from "react";
 import { ThemeToggle } from "./ThemeToggle";
+import { useGuestCart } from "@/api/hooks";
+import { NotificationDropdown } from "./NotificationDropdown";
 
 export function Navbar() {
   const { user, isAuthenticated } = useAuthStore();
-  const { cart, toggleCart } = useCartStore();
+  const { toggleCart } = useCartStore();
   const { setSearchOpen, setMobileMenuOpen, mobileMenuOpen } = useUIStore();
   const { mutate: logout } = useLogout();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const itemCount = cart?.items.reduce((s, i) => s + i.quantity, 0) ?? 0;
+  const { data: serverCart } = useCart();
+  const guestItems = useGuestCart();
+
+  const itemCount = isAuthenticated
+    ? (serverCart?.items.reduce((s, i) => s + i.quantity, 0) ?? 0)
+    : guestItems.reduce((s, i) => s + i.quantity, 0);
 
   // Close user menu on outside click
   useEffect(() => {
@@ -108,18 +115,15 @@ export function Navbar() {
           {/* Wishlist — ALL authenticated users can shop */}
           {isAuthenticated && (
             <Link
-            to={ROUTES.CUSTOMER.WISHLIST}
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-800 dark:hover:text-white"
-            aria-label="Wishlist"
+              to={ROUTES.CUSTOMER.WISHLIST}
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-800 dark:hover:text-white"
+              aria-label="Wishlist"
             >
               <Heart className="h-5 w-5" />
             </Link>
           )}
-          {isAuthenticated && (
-            <Link to={ROUTES.CUSTOMER.NOTIFICATIONS}>
-              <Bell />
-            </Link>
-          )}
+          {!isAuthenticated && <ThemeToggle/>}
+          {isAuthenticated && <NotificationDropdown />}
 
           {/* Cart — ALL authenticated users can shop */}
           <button

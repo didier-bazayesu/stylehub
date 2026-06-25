@@ -114,7 +114,7 @@ let ReviewsService = class ReviewsService {
             user_id: product.vendor.user_id,
             type: client_1.NotificationType.REVIEW,
             title: 'New product review',
-            message: `${review.user.first_name} left a ${dto.rating}-star review on ${product.name}.`,
+            message: `${review.user?.first_name ?? 'Someone'} left a ${dto.rating}-star review on ${product.name}.`,
             data: {
                 product_id: productId,
                 review_id: review.id,
@@ -200,11 +200,13 @@ let ReviewsService = class ReviewsService {
             is_verified_purchase: review.is_verified_purchase,
             created_at: review.created_at,
             updated_at: review.updated_at,
-            user: {
-                first_name: review.user.first_name,
-                last_name: review.user.last_name,
-                avatar_url: review.user.avatar_url,
-            },
+            user: review.user
+                ? {
+                    first_name: review.user.first_name,
+                    last_name: review.user.last_name,
+                    avatar_url: review.user.avatar_url,
+                }
+                : null,
         };
     }
 };

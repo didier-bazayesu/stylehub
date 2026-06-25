@@ -7,6 +7,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { OrderStatus } from '@/types'
 import { Link } from "react-router-dom";
 import { ROUTES } from "@/config/constants";
+import { useAuthStore } from "@/store";
 
 const STATUS_FILTERS = [
   { label: 'All', value: undefined },
@@ -19,6 +20,7 @@ const STATUS_FILTERS = [
 export default function CustomerOrdersPage() {
   const [status, setStatus] = useState<OrderStatus | undefined>(undefined)
   const { data, isLoading } = useOrders({ status })
+  const user = useAuthStore((s) => s.user)
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
@@ -59,23 +61,24 @@ export default function CustomerOrdersPage() {
           ))}
         </div>
       )}
-      {/* Become a vendor CTA */}
-      <div className="mt-8 flex items-center justify-between gap-4 rounded-xl border border-gray-100 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-900">
-        <div>
-          <p className="text-sm font-medium text-gray-900 dark:text-white">
-            Want to sell on StyleHub?
-          </p>
-          <p className="text-xs text-gray-500">
-            Apply to open your own store and reach thousands of customers.
-          </p>
+      {user?.role === "CUSTOMER" && (
+        <div className="mt-8 flex items-center justify-between gap-4 rounded-xl border border-gray-100 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-900">
+          <div>
+            <p className="text-sm font-medium text-gray-900 dark:text-white">
+              Want to sell on StyleHub?
+            </p>
+            <p className="text-xs text-gray-500">
+              Apply to open your own store and reach thousands of customers.
+            </p>
+          </div>
+          <Link
+            to={ROUTES.VENDOR_APPLY}
+            className="shrink-0 rounded-lg bg-gray-900 px-3 py-2 text-xs font-medium text-white hover:bg-gray-800 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100"
+          >
+            Apply now
+          </Link>
         </div>
-        <Link
-          to={ROUTES.VENDOR_APPLY}
-          className="shrink-0 rounded-lg bg-gray-900 px-3 py-2 text-xs font-medium text-white hover:bg-gray-800 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100"
-        >
-          Apply now
-        </Link>
-      </div>  
+      )}
     </div>
   );
 }

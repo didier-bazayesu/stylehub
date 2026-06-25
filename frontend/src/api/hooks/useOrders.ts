@@ -10,6 +10,7 @@ import type {
   Order,
   OrderStatus,
   PaginationMeta,
+  VendorOrderItem,
 } from '@/types'
 
 interface OrderFilters {
@@ -75,7 +76,7 @@ export function useVendorOrders(filters: OrderFilters = {}) {
     queryFn: async () => {
       const qs = buildQueryString(filters as Record<string, string | number | undefined | null>)
       const { data } = await apiClient.get<
-        ApiResponse<Order[]> & { meta: PaginationMeta }
+        ApiResponse<VendorOrderItem[]> & { meta: PaginationMeta }
       >(`/orders/vendor${qs}`)
       return data
     },

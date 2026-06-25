@@ -36,41 +36,85 @@ export function formatCompactCurrency(amount: number, currency = 'USD'): string 
 // ─── Date formatting ────────────────────────────────────────────────────────
 
 export function formatDate(
-  date: string | Date,
+  date: string | Date | null | undefined,
   options?: Intl.DateTimeFormatOptions,
 ): string {
-  return new Intl.DateTimeFormat('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    ...options,
-  }).format(new Date(date))
+  if (!date) {
+    return '—'
+  }
+
+  try {
+    const dateObj = new Date(date)
+    
+    // Check if date is valid
+    if (isNaN(dateObj.getTime())) {
+      return '—'
+    }
+
+    return new Intl.DateTimeFormat('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      ...options,
+    }).format(dateObj)
+  } catch {
+    return '—'
+  }
 }
 
-export function formatDatetime(date: string | Date): string {
-  return new Intl.DateTimeFormat('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(date))
+export function formatDatetime(date: string | Date | null | undefined): string {
+  if (!date) {
+    return '—'
+  }
+
+  try {
+    const dateObj = new Date(date)
+    
+    // Check if date is valid
+    if (isNaN(dateObj.getTime())) {
+      return '—'
+    }
+
+    return new Intl.DateTimeFormat('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(dateObj)
+  } catch {
+    return '—'
+  }
 }
 
-export function formatRelativeTime(date: string | Date): string {
-  const now = new Date()
-  const target = new Date(date)
-  const diffMs = now.getTime() - target.getTime()
-  const diffSecs = Math.floor(diffMs / 1000)
-  const diffMins = Math.floor(diffSecs / 60)
-  const diffHours = Math.floor(diffMins / 60)
-  const diffDays = Math.floor(diffHours / 24)
+export function formatRelativeTime(date: string | Date | null | undefined): string {
+  if (!date) {
+    return '—'
+  }
 
-  if (diffSecs < 60) return 'just now'
-  if (diffMins < 60) return `${diffMins}m ago`
-  if (diffHours < 24) return `${diffHours}h ago`
-  if (diffDays < 7) return `${diffDays}d ago`
-  return formatDate(date)
+  try {
+    const now = new Date()
+    const target = new Date(date)
+    
+    // Check if date is valid
+    if (isNaN(target.getTime())) {
+      return '—'
+    }
+
+    const diffMs = now.getTime() - target.getTime()
+    const diffSecs = Math.floor(diffMs / 1000)
+    const diffMins = Math.floor(diffSecs / 60)
+    const diffHours = Math.floor(diffMins / 60)
+    const diffDays = Math.floor(diffHours / 24)
+
+    if (diffSecs < 60) return 'just now'
+    if (diffMins < 60) return `${diffMins}m ago`
+    if (diffHours < 24) return `${diffHours}h ago`
+    if (diffDays < 7) return `${diffDays}d ago`
+    return formatDate(date)
+  } catch {
+    return '—'
+  }
 }
 
 // ─── Number formatting ──────────────────────────────────────────────────────

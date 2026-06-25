@@ -11,6 +11,8 @@ import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { Resend } from 'resend';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '@prisma/client';
 import {
   RegisterDto,
   LoginDto,
@@ -29,6 +31,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private notificationsService: NotificationsService,
   ) {
     this.resend = new Resend(this.configService.get('RESEND_API_KEY'));
   }
@@ -67,6 +70,14 @@ export class AuthService {
 
     // Send verification email
     await this.sendVerificationEmail(user.email, emailVerificationToken);
+
+    // Notify admins of new user registration (informational)
+    await this.notificationsService.notifyAdmins({
+      type: NotificationType.SYSTEM,
+      title: 'New user registered',
+      message: `${user.first_name} ${user.last_name} (${user.email}) just created an account.`,
+      data: { user_id: user.id },
+    });
 
     return {
       id: user.id,

@@ -148,6 +148,14 @@ export class OrdersService {
 
     await this.notifyVendorsOfNewOrder(order.id);
 
+    const orderRef = this.formatOrderRef(order.id);
+    await this.notificationsService.notifyCustomer(userId, {
+      type: NotificationType.ORDER_UPDATE,
+      title: 'Order placed',
+      message: `Order ${orderRef} has been placed successfully. We'll notify you when payment is confirmed.`,
+      data: { order_id: order.id },
+    });
+
     return this.findById(userId, order.id);
   }
 
@@ -292,17 +300,7 @@ export class OrdersService {
       },
     });
 
-    await this.notificationsService.create({
-      user_id: updated.order.user_id,
-      type: NotificationType.ORDER_UPDATE,
-      title: 'Order status updated',
-      message: `Your order item for ${updated.product.name} is now ${dto.status.toLowerCase()}.`,
-      data: {
-        order_id: updated.order.id,
-        order_item_id: updated.id,
-        status: dto.status,
-      },
-    });
+    await this.sendOrderItemStatusNotifications(updated, dto.status);
 
     return {
       id: updated.id,
@@ -311,6 +309,189 @@ export class OrdersService {
       variant: updated.variant,
       message: 'Order item status updated successfully.',
     };
+  }
+
+  /** Admin cancels an order item and notifies customer, vendor, and admins. */
+  async adminCancelOrderItem(orderItemId: string) {
+    const orderItem = await this.prisma.orderItem.findFirst({
+      where: { id: orderItemId },
+    });
+
+    if (!orderItem) {
+      throw new NotFoundException({
+        code: 'ORDER_NOT_FOUND',
+        message: 'Order item not found.',
+      });
+    }
+
+    if (orderItem.status === OrderStatus.CANCELLED) {
+      throw new BadRequestException({
+        code: 'VALIDATION_ERROR',
+        message: 'Order item is already cancelled.',
+      });
+    }
+
+    const updated = await this.prisma.orderItem.update({
+      where: { id: orderItemId },
+      data: { status: OrderStatus.CANCELLED },
+      include: {
+        product: { select: { name: true } },
+        order: { select: { id: true, user_id: true } },
+      },
+    });
+
+    await this.sendOrderItemStatusNotifications(updated, OrderStatus.CANCELLED, {
+      cancelledBy: 'admin',
+    });
+
+    return {
+      id: updated.id,
+      status: updated.status,
+      message: 'Order item cancelled successfully.',
+    };
+  }
+
+  /** Admin issues a refund for an order item and notifies customer + admins. */
+  async adminRefundOrderItem(orderItemId: string) {
+    const orderItem = await this.prisma.orderItem.findFirst({
+      where: { id: orderItemId },
+    });
+
+    if (!orderItem) {
+      throw new NotFoundException({
+        code: 'ORDER_NOT_FOUND',
+        message: 'Order item not found.',
+      });
+    }
+
+    if (orderItem.status === OrderStatus.REFUNDED) {
+      throw new BadRequestException({
+        code: 'VALIDATION_ERROR',
+        message: 'Order item is already refunded.',
+      });
+    }
+
+    await this.prisma.orderItem.update({
+      where: { id: orderItemId },
+      data: { status: OrderStatus.REFUNDED },
+    });
+
+    await this.sendRefundNotifications(orderItem.order_id, orderItemId);
+
+    return {
+      id: orderItemId,
+      status: OrderStatus.REFUNDED,
+      message: 'Order item refunded successfully.',
+    };
+  }
+
+  /**
+   * Call when a refund is processed for an order item.
+   * Notifies the customer and all admins (no vendor alert per requirements).
+   */
+  async sendRefundNotifications(orderId: string, orderItemId: string) {
+    const item = await this.prisma.orderItem.findFirst({
+      where: { id: orderItemId, order_id: orderId },
+      include: {
+        order: { select: { id: true, user_id: true } },
+        product: { select: { name: true } },
+      },
+    });
+
+    if (!item) {
+      return;
+    }
+
+    const productName = item.product?.name ?? item.product_name;
+    const orderRef = this.formatOrderRef(orderId);
+
+    await this.notificationsService.notifyCustomer(item.order.user_id, {
+      type: NotificationType.ORDER_UPDATE,
+      title: 'Refund issued',
+      message: `A refund has been issued for order ${orderRef} ("${productName}").`,
+      data: {
+        order_id: orderId,
+        order_item_id: orderItemId,
+        status: OrderStatus.REFUNDED,
+      },
+    });
+
+    await this.notificationsService.notifyAdmins({
+      type: NotificationType.SYSTEM,
+      title: 'Refund issued',
+      message: `Refund issued for order ${orderRef} — "${productName}".`,
+      data: { order_id: orderId, order_item_id: orderItemId },
+    });
+  }
+
+  private async sendOrderItemStatusNotifications(
+    updated: {
+      id: string;
+      product_name: string;
+      product?: { name: string } | null;
+      order: { id: string; user_id: string };
+      vendor_id: string;
+    },
+    status: OrderStatus,
+    options?: { cancelledBy?: 'admin' | 'vendor' },
+  ) {
+    const productName = updated.product?.name ?? updated.product_name;
+    const orderRef = this.formatOrderRef(updated.order.id);
+    const notificationData = {
+      order_id: updated.order.id,
+      order_item_id: updated.id,
+      status,
+    };
+
+    await this.notificationsService.notifyCustomer(updated.order.user_id, {
+      type: NotificationType.ORDER_UPDATE,
+      title: this.getCustomerStatusTitle(status),
+      message: this.getCustomerStatusMessage(status, productName, orderRef),
+      data: notificationData,
+    });
+
+    if (status === OrderStatus.DELIVERED) {
+      const vendor = await this.prisma.vendor.findFirst({
+        where: { id: updated.vendor_id },
+        select: { user_id: true },
+      });
+
+      if (vendor) {
+        await this.notificationsService.notifyVendor(vendor.user_id, {
+          type: NotificationType.ORDER_UPDATE,
+          title: 'Item delivered',
+          message: `"${productName}" from order ${orderRef} was delivered. Sale complete.`,
+          data: notificationData,
+        });
+      }
+    }
+
+    if (status === OrderStatus.CANCELLED) {
+      const vendor = await this.prisma.vendor.findFirst({
+        where: { id: updated.vendor_id },
+        select: { user_id: true },
+      });
+
+      if (vendor) {
+        const cancelledBy = options?.cancelledBy ?? 'vendor';
+        await this.notificationsService.notifyVendor(vendor.user_id, {
+          type: NotificationType.ORDER_UPDATE,
+          title: 'Item cancelled',
+          message:
+            cancelledBy === 'admin'
+              ? `"${productName}" from order ${orderRef} was cancelled by admin.`
+              : `"${productName}" from order ${orderRef} was cancelled.`,
+          data: notificationData,
+        });
+      }
+
+      await this.notificationsService.notifyAdmins({
+        type: NotificationType.SYSTEM,
+        title: 'Order item cancelled',
+        message: `Order item "${productName}" (${orderRef}) was cancelled.`,
+        data: notificationData,
+      });
+    }
   }
 
   private async notifyVendorsOfNewOrder(orderId: string) {
@@ -322,6 +503,7 @@ export class OrdersService {
       },
     });
 
+    const orderRef = this.formatOrderRef(orderId);
     const notifiedVendors = new Set<string>();
 
     for (const item of orderItems) {
@@ -331,14 +513,17 @@ export class OrdersService {
 
       notifiedVendors.add(item.vendor.user_id);
 
-      await this.notificationsService.create({
-        user_id: item.vendor.user_id,
+      await this.notificationsService.notifyVendor(item.vendor.user_id, {
         type: NotificationType.ORDER_UPDATE,
         title: 'New order received',
-        message: `You received a new order including ${item.product.name}.`,
+        message: `You received a new order (${orderRef}) including "${item.product?.name ?? item.product_name ?? 'a product'}".`,
         data: { order_id: orderId },
       });
     }
+  }
+
+  private formatOrderRef(orderId: string) {
+    return `#${orderId.slice(-8).toUpperCase()}`;
   }
 
   private async validateCoupon(code: string, subtotal: number) {
@@ -489,13 +674,62 @@ export class OrdersService {
         unit_price: item.unit_price,
         total_price: item.total_price,
         status: item.status,
-        product: {
-          ...item.product,
-          image: item.product.images[0]?.url ?? null,
-        },
+        product: item.product
+          ? {
+              ...item.product,
+              image: item.product.images[0]?.url ?? null,
+            }
+          : {
+              id: null,
+              name: item.product_name,
+              slug: null,
+              image: null,
+            },
         variant: item.variant,
         vendor: item.vendor,
       })),
     };
+  }
+
+  private getCustomerStatusTitle(status: OrderStatus): string {
+    switch (status) {
+      case OrderStatus.CONFIRMED:
+        return 'Order confirmed';
+      case OrderStatus.PROCESSING:
+        return 'Order processing';
+      case OrderStatus.SHIPPED:
+        return 'Order shipped';
+      case OrderStatus.DELIVERED:
+        return 'Order delivered';
+      case OrderStatus.CANCELLED:
+        return 'Order cancelled';
+      case OrderStatus.REFUNDED:
+        return 'Refund issued';
+      default:
+        return 'Order status updated';
+    }
+  }
+
+  private getCustomerStatusMessage(
+    status: OrderStatus,
+    productName: string,
+    orderRef: string,
+  ): string {
+    switch (status) {
+      case OrderStatus.CONFIRMED:
+        return `Your order ${orderRef} for "${productName}" has been confirmed.`;
+      case OrderStatus.PROCESSING:
+        return `Your order ${orderRef} for "${productName}" is being packed and prepared.`;
+      case OrderStatus.SHIPPED:
+        return `"${productName}" from order ${orderRef} has shipped and is on its way.`;
+      case OrderStatus.DELIVERED:
+        return `"${productName}" from order ${orderRef} has been delivered. Enjoy your purchase!`;
+      case OrderStatus.CANCELLED:
+        return `Your order ${orderRef} for "${productName}" has been cancelled.`;
+      case OrderStatus.REFUNDED:
+        return `A refund has been issued for "${productName}" on order ${orderRef}.`;
+      default:
+        return `Your order ${orderRef} for "${productName}" status changed to ${status.toLowerCase()}.`;
+    }
   }
 }

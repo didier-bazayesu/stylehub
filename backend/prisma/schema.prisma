@@ -48,6 +48,15 @@ enum ProductStatus {
   ARCHIVED
 }
 
+// Tracks WHY a product was archived so the system can restore
+// only its own archives when a vendor is re-enabled.
+enum ArchiveReason {
+  VENDOR_DISABLED  // set by admin when vendor account is suspended
+  MANUAL           // set by vendor themselves
+  OUT_OF_STOCK     // set automatically when stock hits 0
+  POLICY           // set by admin for policy violation
+}
+
 enum NotificationType {
   ORDER_UPDATE
   REVIEW
@@ -57,43 +66,51 @@ enum NotificationType {
 }
 
 // ─── User ─────────────────────────────────────────────────────────
+// Soft-deleted (deleted_at) to preserve order & review history.
 
 model User {
-  id                    String         @id @default(cuid())
-  email                 String         @unique
-  password_hash         String
-  first_name            String
-  last_name             String
-  avatar_url            String?
-  phone                 String?
-  role                  Role           @default(CUSTOMER)
-  is_verified           Boolean        @default(false)
-  is_active             Boolean        @default(true)
-  refresh_token         String?
+  id                       String    @id @default(cuid())
+  email                    String    @unique
+  password_hash            String
+  first_name               String
+  last_name                String
+  avatar_url               String?
+  phone                    String?
+  role                     Role      @default(CUSTOMER)
+  is_verified              Boolean   @default(false)
+  is_active                Boolean   @default(true)
+  refresh_token            String?
   email_verification_token String?
-  password_reset_token  String?
-  password_reset_expires DateTime?
-  created_at            DateTime       @default(now())
-  updated_at            DateTime       @updatedAt
-  deleted_at            DateTime?
+  password_reset_token     String?
+  password_reset_expires   DateTime?
+  created_at               DateTime  @default(now())
+  updated_at               DateTime  @updatedAt
+  deleted_at               DateTime?
 
-  vendor        Vendor?
+  // Cascade: personal data owned by user
+  vendor        Vendor?        @relation("UserVendor")
   addresses     Address[]
-  orders        Order[]
   cart          Cart?
   wishlist      Wishlist?
-  reviews       Review[]
   notifications Notification[]
+
+  // Restrict: financial records — cannot delete user while orders exist
+  orders Order[]
+
+  // SetNull: keep reviews, anonymize the author
+  reviews Review[]
 
   @@index([email])
 }
 
 // ─── Vendor ───────────────────────────────────────────────────────
+// Soft-deleted to preserve order/analytics history.
 
 model Vendor {
   id               String       @id @default(cuid())
   user_id          String       @unique
-  user             User         @relation(fields: [user_id], references: [id])
+  // Cascade: vendor is fully owned by user — user deleted → vendor deleted
+  user             User         @relation("UserVendor", fields: [user_id], references: [id], onDelete: Cascade)
   status           VendorStatus @default(PENDING)
   business_name    String
   business_email   String
@@ -103,9 +120,16 @@ model Vendor {
   updated_at       DateTime     @updatedAt
   deleted_at       DateTime?
 
+  // Cascade: store is owned by vendor
   store     Store?
+
+  // Restrict: products are business records — handle archiving in service layer
   products  Product[]
+
+  // Restrict: financial records
   orders    OrderItem[]
+
+  // Cascade: analytics are derived data, safe to remove with vendor
   analytics Analytics[]
 }
 
@@ -114,7 +138,8 @@ model Vendor {
 model Store {
   id          String   @id @default(cuid())
   vendor_id   String   @unique
-  vendor      Vendor   @relation(fields: [vendor_id], references: [id])
+  // Cascade: store is owned by vendor — vendor deleted → store deleted
+  vendor      Vendor   @relation(fields: [vendor_id], references: [id], onDelete: Cascade)
   name        String
   slug        String   @unique
   logo_url    String?
@@ -128,6 +153,8 @@ model Store {
 }
 
 // ─── Category ─────────────────────────────────────────────────────
+// Restrict on both self-relation and product relation:
+// Admin must reassign products before deleting a category.
 
 model Category {
   id        String     @id @default(cuid())
@@ -135,40 +162,54 @@ model Category {
   slug      String     @unique
   image_url String?
   parent_id String?
-  parent    Category?  @relation("CategoryTree", fields: [parent_id], references: [id])
+  // Restrict: cannot delete parent while subcategories exist
+  parent    Category?  @relation("CategoryTree", fields: [parent_id], references: [id], onDelete: Restrict)
   children  Category[] @relation("CategoryTree")
+  // Restrict: cannot delete category while products use it
   products  Product[]
 
   @@index([slug])
 }
 
 // ─── Product ──────────────────────────────────────────────────────
+// Soft-deleted (deleted_at) to preserve order history.
+// archive_reason tracks WHY it was archived so restores are surgical.
 
 model Product {
-  id           String        @id @default(cuid())
-  vendor_id    String
-  vendor       Vendor        @relation(fields: [vendor_id], references: [id])
-  category_id  String
-  category     Category      @relation(fields: [category_id], references: [id])
-  name         String
-  slug         String        @unique
-  description  String
-  base_price   Decimal       @db.Decimal(10, 2)
-  status       ProductStatus @default(DRAFT)
-  is_featured  Boolean       @default(false)
-  total_stock  Int           @default(0)
-  avg_rating   Float         @default(0)
-  review_count Int           @default(0)
-  created_at   DateTime      @default(now())
-  updated_at   DateTime      @updatedAt
-  deleted_at   DateTime?
+  id             String         @id @default(cuid())
+  vendor_id      String
+  // Restrict: products survive vendor soft-delete; service handles archiving
+  vendor         Vendor         @relation(fields: [vendor_id], references: [id], onDelete: Restrict)
+  category_id    String
+  // Restrict: admin must move products before deleting a category
+  category       Category       @relation(fields: [category_id], references: [id], onDelete: Restrict)
+  name           String
+  slug           String         @unique
+  description    String
+  base_price     Decimal        @db.Decimal(10, 2)
+  status         ProductStatus  @default(DRAFT)
+  archive_reason ArchiveReason?
+  is_featured    Boolean        @default(false)
+  total_stock    Int            @default(0)
+  avg_rating     Float          @default(0)
+  review_count   Int            @default(0)
+  created_at     DateTime       @default(now())
+  updated_at     DateTime       @updatedAt
+  deleted_at     DateTime?
 
-  variants       ProductVariant[]
-  images         ProductImage[]
-  reviews        Review[]
-  order_items    OrderItem[]
+  // Cascade: images & variants have no standalone value
+  variants ProductVariant[]
+  images   ProductImage[]
+
+  // Cascade: remove from active carts & wishlists when product is deleted
   cart_items     CartItem[]
   wishlist_items WishlistItem[]
+
+  // Cascade: reviews belong to product
+  reviews Review[]
+
+  // SetNull: keep order line items even after product is removed
+  order_items OrderItem[]
 
   @@index([vendor_id, status])
   @@index([category_id])
@@ -180,14 +221,18 @@ model Product {
 model ProductVariant {
   id         String  @id @default(cuid())
   product_id String
-  product    Product @relation(fields: [product_id], references: [id])
+  // Cascade: variants are owned by product
+  product    Product @relation(fields: [product_id], references: [id], onDelete: Cascade)
   sku        String  @unique
   size       String?
   color      String?
   price      Decimal @db.Decimal(10, 2)
   stock      Int     @default(0)
 
-  cart_items  CartItem[]
+  // Cascade: remove variant from active carts
+  cart_items CartItem[]
+
+  // SetNull: keep order line items even after variant is removed
   order_items OrderItem[]
 }
 
@@ -196,7 +241,8 @@ model ProductVariant {
 model ProductImage {
   id            String  @id @default(cuid())
   product_id    String
-  product       Product @relation(fields: [product_id], references: [id])
+  // Cascade: images are owned by product
+  product       Product @relation(fields: [product_id], references: [id], onDelete: Cascade)
   url           String
   public_id     String
   is_primary    Boolean @default(false)
@@ -208,7 +254,8 @@ model ProductImage {
 model Cart {
   id         String     @id @default(cuid())
   user_id    String     @unique
-  user       User       @relation(fields: [user_id], references: [id])
+  // Cascade: cart is personal session data
+  user       User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
   created_at DateTime   @default(now())
   updated_at DateTime   @updatedAt
   items      CartItem[]
@@ -217,11 +264,14 @@ model Cart {
 model CartItem {
   id         String         @id @default(cuid())
   cart_id    String
-  cart       Cart           @relation(fields: [cart_id], references: [id])
+  // Cascade: items belong to the cart
+  cart       Cart           @relation(fields: [cart_id], references: [id], onDelete: Cascade)
   product_id String
-  product    Product        @relation(fields: [product_id], references: [id])
+  // Cascade: product removed → remove from cart
+  product    Product        @relation(fields: [product_id], references: [id], onDelete: Cascade)
   variant_id String
-  variant    ProductVariant @relation(fields: [variant_id], references: [id])
+  // Cascade: variant removed → remove from cart
+  variant    ProductVariant @relation(fields: [variant_id], references: [id], onDelete: Cascade)
   quantity   Int
   added_at   DateTime       @default(now())
 
@@ -233,16 +283,19 @@ model CartItem {
 model Wishlist {
   id      String         @id @default(cuid())
   user_id String         @unique
-  user    User           @relation(fields: [user_id], references: [id])
+  // Cascade: wishlist is personal data
+  user    User           @relation(fields: [user_id], references: [id], onDelete: Cascade)
   items   WishlistItem[]
 }
 
 model WishlistItem {
   id          String   @id @default(cuid())
   wishlist_id String
-  wishlist    Wishlist @relation(fields: [wishlist_id], references: [id])
+  // Cascade: items belong to the wishlist
+  wishlist    Wishlist @relation(fields: [wishlist_id], references: [id], onDelete: Cascade)
   product_id  String
-  product     Product  @relation(fields: [product_id], references: [id])
+  // Cascade: product removed → remove from wishlist
+  product     Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
   added_at    DateTime @default(now())
 
   @@unique([wishlist_id, product_id])
@@ -253,9 +306,11 @@ model WishlistItem {
 model Order {
   id                       String      @id @default(cuid())
   user_id                  String
-  user                     User        @relation(fields: [user_id], references: [id])
+  // Restrict: cannot delete user while orders exist (financial record)
+  user                     User        @relation(fields: [user_id], references: [id], onDelete: Restrict)
   address_id               String
-  address                  Address     @relation(fields: [address_id], references: [id])
+  // Restrict: cannot delete address that is referenced by orders
+  address                  Address     @relation(fields: [address_id], references: [id], onDelete: Restrict)
   status                   OrderStatus @default(PENDING)
   subtotal                 Decimal     @db.Decimal(10, 2)
   shipping_cost            Decimal     @db.Decimal(10, 2)
@@ -267,26 +322,39 @@ model Order {
   created_at               DateTime    @default(now())
   updated_at               DateTime    @updatedAt
 
+  // Cascade: line items belong to the order
   items   OrderItem[]
+  // Cascade: payment record belongs to the order
   payment Payment?
 
   @@index([user_id, status])
 }
 
 model OrderItem {
-  id          String         @id @default(cuid())
-  order_id    String
-  order       Order          @relation(fields: [order_id], references: [id])
-  product_id  String
-  product     Product        @relation(fields: [product_id], references: [id])
-  variant_id  String
-  variant     ProductVariant @relation(fields: [variant_id], references: [id])
+  id         String  @id @default(cuid())
+  order_id   String
+  // Cascade: line items belong to the order
+  order      Order   @relation(fields: [order_id], references: [id], onDelete: Cascade)
+
+  // SetNull: keep line item even if product is later soft-deleted
+  product_id String?
+  product    Product? @relation(fields: [product_id], references: [id], onDelete: SetNull)
+
+  // SetNull: keep line item even if variant is later deleted
+  variant_id String?
+  variant    ProductVariant? @relation(fields: [variant_id], references: [id], onDelete: SetNull)
+
   vendor_id   String
-  vendor      Vendor         @relation(fields: [vendor_id], references: [id])
-  quantity    Int
-  unit_price  Decimal        @db.Decimal(10, 2)
-  total_price Decimal        @db.Decimal(10, 2)
-  status      OrderStatus    @default(PENDING)
+  // Restrict: financial record — cannot delete vendor with existing orders
+  vendor      Vendor  @relation(fields: [vendor_id], references: [id], onDelete: Restrict)
+
+  // Snapshot fields: preserve product details at time of purchase
+  product_name  String  @default("")
+  variant_sku   String  @default("")
+  quantity      Int
+  unit_price    Decimal @db.Decimal(10, 2)
+  total_price   Decimal @db.Decimal(10, 2)
+  status        OrderStatus @default(PENDING)
 }
 
 // ─── Payment ──────────────────────────────────────────────────────
@@ -294,7 +362,8 @@ model OrderItem {
 model Payment {
   id                    String        @id @default(cuid())
   order_id              String        @unique
-  order                 Order         @relation(fields: [order_id], references: [id])
+  // Cascade: payment belongs to the order
+  order                 Order         @relation(fields: [order_id], references: [id], onDelete: Cascade)
   stripe_payment_intent String
   amount                Decimal       @db.Decimal(10, 2)
   currency              String        @default("usd")
@@ -308,7 +377,8 @@ model Payment {
 model Address {
   id          String  @id @default(cuid())
   user_id     String
-  user        User    @relation(fields: [user_id], references: [id])
+  // Cascade: addresses are personal data owned by user
+  user        User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
   full_name   String
   phone       String
   line1       String
@@ -319,23 +389,27 @@ model Address {
   country     String
   is_default  Boolean @default(false)
 
+  // Restrict: cannot delete an address that orders reference
   orders Order[]
 }
 
 // ─── Review ───────────────────────────────────────────────────────
+// user_id is nullable so reviews survive user soft-deletion (anonymized).
 
 model Review {
-  id                  String   @id @default(cuid())
-  user_id             String
-  user                User     @relation(fields: [user_id], references: [id])
-  product_id          String
-  product             Product  @relation(fields: [product_id], references: [id])
-  rating              Int
-  comment             String?
-  is_verified_purchase Boolean @default(false)
-  created_at          DateTime @default(now())
-  updated_at          DateTime @updatedAt
-  deleted_at          DateTime?
+  id                   String   @id @default(cuid())
+  // SetNull: keep review text, anonymize the author when user is deleted
+  user_id              String?
+  user                 User?    @relation(fields: [user_id], references: [id], onDelete: SetNull)
+  product_id           String
+  // Cascade: reviews belong to the product
+  product              Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  rating               Int
+  comment              String?
+  is_verified_purchase Boolean  @default(false)
+  created_at           DateTime @default(now())
+  updated_at           DateTime @updatedAt
+  deleted_at           DateTime?
 
   @@unique([user_id, product_id])
 }
@@ -360,7 +434,8 @@ model Coupon {
 model Notification {
   id         String           @id @default(cuid())
   user_id    String
-  user       User             @relation(fields: [user_id], references: [id])
+  // Cascade: notifications are personal data
+  user       User             @relation(fields: [user_id], references: [id], onDelete: Cascade)
   type       NotificationType
   title      String
   message    String
@@ -376,7 +451,8 @@ model Notification {
 model Analytics {
   id         String   @id @default(cuid())
   vendor_id  String
-  vendor     Vendor   @relation(fields: [vendor_id], references: [id])
+  // Cascade: analytics are derived data owned by vendor
+  vendor     Vendor   @relation(fields: [vendor_id], references: [id], onDelete: Cascade)
   date       DateTime @db.Date
   revenue    Decimal  @db.Decimal(10, 2)
   orders     Int      @default(0)

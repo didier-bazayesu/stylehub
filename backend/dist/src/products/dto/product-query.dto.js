@@ -13,6 +13,7 @@ exports.ProductQueryDto = exports.ProductSort = void 0;
 const class_validator_1 = require("class-validator");
 const swagger_1 = require("@nestjs/swagger");
 const class_transformer_1 = require("class-transformer");
+const client_1 = require("@prisma/client");
 const dto_1 = require("../../common/dto");
 var ProductSort;
 (function (ProductSort) {
@@ -28,6 +29,7 @@ class ProductQueryDto extends dto_1.PaginationQueryDto {
     minPrice;
     maxPrice;
     sort = ProductSort.NEWEST;
+    status;
 }
 exports.ProductQueryDto = ProductQueryDto;
 __decorate([
@@ -70,4 +72,10 @@ __decorate([
     (0, class_validator_1.IsEnum)(ProductSort),
     __metadata("design:type", String)
 ], ProductQueryDto.prototype, "sort", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ enum: client_1.ProductStatus }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsEnum)(client_1.ProductStatus),
+    __metadata("design:type", String)
+], ProductQueryDto.prototype, "status", void 0);
 //# sourceMappingURL=product-query.dto.js.map

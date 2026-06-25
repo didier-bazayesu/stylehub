@@ -13,6 +13,7 @@ import {
 import { cn } from '@/lib/utils'
 import { ROUTES } from '@/config/constants'
 import { useUIStore } from '@/store'
+import { BackButton } from './BackButton'
 
 const navItems = [
   { to: ROUTES.ADMIN.DASHBOARD, icon: LayoutDashboard, label: 'Overview' },
@@ -81,6 +82,9 @@ export function AdminSidebar() {
           </NavLink>
         ))}
       </nav>
+
+      {/* Back to Store */}
+      <BackButton sidebarOpen={sidebarOpen} />
     </aside>
   )
 }

@@ -51,7 +51,7 @@ let StoresController = class StoresController {
         if (!file) {
             throw new common_1.BadRequestException({
                 code: 'FILE_REQUIRED',
-                message: 'Image file is required.',
+                message: 'Image file is required. Send the file under the field name "logo".',
             });
         }
         return this.storesService.uploadLogo(userId, file);
@@ -60,7 +60,7 @@ let StoresController = class StoresController {
         if (!file) {
             throw new common_1.BadRequestException({
                 code: 'FILE_REQUIRED',
-                message: 'Image file is required.',
+                message: 'Image file is required. Send the file under the field name "banner".',
             });
         }
         return this.storesService.uploadBanner(userId, file);
@@ -101,7 +101,7 @@ __decorate([
     (0, decorators_1.Roles)(client_1.Role.VENDOR),
     (0, swagger_1.ApiConsumes)('multipart/form-data'),
     (0, swagger_1.ApiOperation)({ summary: 'Upload store logo' }),
-    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file', imageUploadOptions)),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('logo', imageUploadOptions)),
     __param(0, (0, decorators_1.CurrentUser)('id')),
     __param(1, (0, common_1.UploadedFile)()),
     __metadata("design:type", Function),
@@ -114,7 +114,7 @@ __decorate([
     (0, decorators_1.Roles)(client_1.Role.VENDOR),
     (0, swagger_1.ApiConsumes)('multipart/form-data'),
     (0, swagger_1.ApiOperation)({ summary: 'Upload store banner' }),
-    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file', imageUploadOptions)),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('banner', imageUploadOptions)),
     __param(0, (0, decorators_1.CurrentUser)('id')),
     __param(1, (0, common_1.UploadedFile)()),
     __metadata("design:type", Function),

@@ -17,8 +17,8 @@ export declare class OrdersController {
         updated_at: Date;
         address: {
             id: string;
-            phone: string;
             user_id: string;
+            phone: string;
             full_name: string;
             line1: string;
             line2: string | null;
@@ -30,8 +30,8 @@ export declare class OrdersController {
         };
         payment: {
             id: string;
-            created_at: Date;
             status: import("@prisma/client").$Enums.PaymentStatus;
+            created_at: Date;
             order_id: string;
             stripe_payment_intent: string;
             amount: import("@prisma/client-runtime-utils").Decimal;
@@ -52,19 +52,24 @@ export declare class OrdersController {
                 images: {
                     url: string;
                 }[];
+            } | {
+                id: null;
+                name: string;
+                slug: null;
+                image: null;
             };
             variant: {
                 id: string;
                 sku: string;
                 size: string | null;
                 color: string | null;
-            };
+            } | null;
             vendor: {
-                id: string;
                 store: {
                     name: string;
                     slug: string;
                 } | null;
+                id: string;
                 business_name: string;
             };
         }[];
@@ -77,8 +82,6 @@ export declare class OrdersController {
             total_price: import("@prisma/client-runtime-utils").Decimal;
             status: import("@prisma/client").$Enums.OrderStatus;
             order: {
-                id: string;
-                created_at: Date;
                 user: {
                     id: string;
                     email: string;
@@ -87,8 +90,8 @@ export declare class OrdersController {
                 };
                 address: {
                     id: string;
-                    phone: string;
                     user_id: string;
+                    phone: string;
                     full_name: string;
                     line1: string;
                     line2: string | null;
@@ -98,19 +101,21 @@ export declare class OrdersController {
                     country: string;
                     is_default: boolean;
                 };
+                id: string;
                 status: import("@prisma/client").$Enums.OrderStatus;
+                created_at: Date;
             };
             product: {
                 id: string;
                 name: string;
                 slug: string;
-            };
+            } | null;
             variant: {
                 id: string;
                 sku: string;
                 size: string | null;
                 color: string | null;
-            };
+            } | null;
         }[];
         meta: {
             page: number;
@@ -126,13 +131,13 @@ export declare class OrdersController {
             id: string;
             name: string;
             slug: string;
-        };
+        } | null;
         variant: {
             id: string;
             sku: string;
             size: string | null;
             color: string | null;
-        };
+        } | null;
         message: string;
     }>;
     findAll(userId: string, query: PaginationQueryDto): Promise<{
@@ -155,7 +160,7 @@ export declare class OrdersController {
                     id: string;
                     name: string;
                     slug: string;
-                };
+                } | null;
             }[];
         }[];
         meta: {
@@ -178,8 +183,8 @@ export declare class OrdersController {
         updated_at: Date;
         address: {
             id: string;
-            phone: string;
             user_id: string;
+            phone: string;
             full_name: string;
             line1: string;
             line2: string | null;
@@ -191,8 +196,8 @@ export declare class OrdersController {
         };
         payment: {
             id: string;
-            created_at: Date;
             status: import("@prisma/client").$Enums.PaymentStatus;
+            created_at: Date;
             order_id: string;
             stripe_payment_intent: string;
             amount: import("@prisma/client-runtime-utils").Decimal;
@@ -213,19 +218,24 @@ export declare class OrdersController {
                 images: {
                     url: string;
                 }[];
+            } | {
+                id: null;
+                name: string;
+                slug: null;
+                image: null;
             };
             variant: {
                 id: string;
                 sku: string;
                 size: string | null;
                 color: string | null;
-            };
+            } | null;
             vendor: {
-                id: string;
                 store: {
                     name: string;
                     slug: string;
                 } | null;
+                id: string;
                 business_name: string;
             };
         }[];
